@@ -1,8 +1,8 @@
 services:
   claude-terminal:
-    build: .
-    # Or use pre-built image:
-    # image: ghcr.io/emptywill/claude-terminal:latest
+    image: ghcr.io/emptywill/claude-terminal:latest
+    # To build locally instead, comment above and uncomment:
+    # build: .
     container_name: claude-terminal
     environment:
       - PORT=3000
