@@ -5,14 +5,31 @@ const socketIO = require('socket.io');
 const pty = require('node-pty');
 const fs = require('fs');
 const session = require('express-session');
+const FileStore = require('session-file-store')(session);
 const bcrypt = require('bcryptjs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const TMUX_SOCKET = process.env.TMUX_SOCKET || '/tmp/tmux-0';
 
-// Session configuration
+// Ensure data directories exist
+const dataPath = '/app/data';
+const sessionsPath = '/app/data/sessions';
+if (!fs.existsSync(dataPath)) {
+    fs.mkdirSync(dataPath, { recursive: true });
+}
+if (!fs.existsSync(sessionsPath)) {
+    fs.mkdirSync(sessionsPath, { recursive: true });
+}
+
+// Session configuration with file-based storage
 const sessionMiddleware = session({
+    store: new FileStore({
+        path: sessionsPath,
+        ttl: 7 * 24 * 60 * 60, // 7 days in seconds
+        retries: 0,
+        reapInterval: 3600 // Clean up expired sessions every hour
+    }),
     secret: process.env.SESSION_SECRET || 'claude-terminal-change-me-in-production',
     resave: false,
     saveUninitialized: false,
@@ -31,10 +48,6 @@ const USERS_FILE = '/app/data/users.json';
 
 // Initialize default users if file doesn't exist
 function initializeUsers() {
-    if (!fs.existsSync('/app/data')) {
-        fs.mkdirSync('/app/data', { recursive: true });
-    }
-
     if (!fs.existsSync(USERS_FILE)) {
         const defaultUser = process.env.DEFAULT_USER || 'admin';
         const defaultPass = process.env.DEFAULT_PASS || 'admin';
@@ -190,9 +203,19 @@ app.get('/api/tmux/sessions', (req, res) => {
 app.post('/api/tmux/create', (req, res) => {
     const { sessionName, command } = req.body;
     const name = sessionName || `claude-${Date.now()}`;
-    const cmd = command || 'bash';
 
-    exec(`tmux new-session -d -s "${name}" "${cmd}"`, (error) => {
+    // If command contains shell operators, wrap in bash -c
+    let tmuxCmd;
+    if (command && (command.includes('&&') || command.includes('||') || command.includes(';'))) {
+        // Escape single quotes in command and wrap with bash -c
+        const escapedCmd = command.replace(/'/g, "'\\''");
+        tmuxCmd = `tmux new-session -d -s "${name}" bash -c '${escapedCmd}; exec bash'`;
+    } else {
+        const cmd = command || 'bash';
+        tmuxCmd = `tmux new-session -d -s "${name}" "${cmd}"`;
+    }
+
+    exec(tmuxCmd, (error) => {
         if (error) {
             res.status(500).json({ error: error.message });
             return;
@@ -312,4 +335,5 @@ io.on('connection', (socket) => {
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`Claude Terminal listening on port ${PORT}`);
     console.log(`Tmux socket path: ${TMUX_SOCKET}`);
+    console.log('Sessions persist across container restarts');
 });

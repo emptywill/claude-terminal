@@ -129,6 +129,14 @@
 
         // Initialize controls
         initControls();
+
+        // Show welcome message
+        const location = isMobile ? 'above' : 'on the left';
+        term.writeln('');
+        term.writeln('  \x1b[1;33m⚡ CLAUDE TERMINAL\x1b[0m');
+        term.writeln('');
+        term.writeln(`  \x1b[90mSelect a session ${location} or create a new one\x1b[0m`);
+        term.writeln('');
     }
 
     // Initialize button controls
@@ -270,8 +278,10 @@
         // Refresh sessions
         document.getElementById('refreshSessions')?.addEventListener('click', loadSessions);
 
-        // Create session
-        document.getElementById('createSession')?.addEventListener('click', createSession);
+        // Create session - open modal
+        document.getElementById('createSession')?.addEventListener('click', () => {
+            openNewSessionModal();
+        });
     }
 
     // Send tmux command (Ctrl+B prefix)
@@ -288,10 +298,18 @@
     async function loadSessions() {
         try {
             const response = await fetch('/api/tmux/sessions');
-            sessions = await response.json();
+            if (!response.ok) {
+                sessions = [];
+                updateSessionList();
+                return;
+            }
+            const data = await response.json();
+            sessions = Array.isArray(data) ? data : [];
             updateSessionList();
         } catch (error) {
             console.error('Failed to load sessions:', error);
+            sessions = [];
+            updateSessionList();
         }
     }
 
@@ -300,7 +318,7 @@
         const list = document.getElementById('sessionList');
         if (!list) return;
 
-        if (sessions.length === 0) {
+        if (!sessions || sessions.length === 0) {
             list.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-secondary); font-size: 0.875rem;">No sessions. Create one to get started.</div>';
             return;
         }
@@ -378,26 +396,63 @@
         });
     }
 
-    // Create new session
-    async function createSession() {
-        const name = prompt('Session name:', `claude-${Date.now()}`);
-        if (!name) return;
+    // New Session Modal Functions
+    window.openNewSessionModal = function() {
+        const modal = document.getElementById('newSessionModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            document.getElementById('newSessionName').value = `claude-${Date.now()}`;
+            document.getElementById('newSessionDir').value = '/root';
+            document.getElementById('startClaudeCode').checked = true;
+        }
+    };
+
+    window.closeNewSessionModal = function() {
+        const modal = document.getElementById('newSessionModal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    };
+
+    window.setSessionDir = function(dir) {
+        document.getElementById('newSessionDir').value = dir;
+    };
+
+    window.submitNewSession = async function() {
+        const nameInput = document.getElementById('newSessionName');
+        const dirInput = document.getElementById('newSessionDir');
+        const claudeCheckbox = document.getElementById('startClaudeCode');
+
+        const sessionName = nameInput.value.trim() || `claude-${Date.now()}`;
+        const directory = dirInput.value.trim() || '/root';
+        const startClaude = claudeCheckbox.checked;
+
+        // Build command
+        let command = `cd ${directory} && clear`;
+        if (startClaude) {
+            command += ' && claude';
+        }
 
         try {
             const response = await fetch('/api/tmux/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionName: name })
+                body: JSON.stringify({ sessionName, command })
             });
 
             if (response.ok) {
+                closeNewSessionModal();
                 await loadSessions();
-                connectToSession(name);
+                connectToSession(sessionName);
+            } else {
+                const error = await response.json();
+                alert('Failed to create session: ' + (error.error || 'Unknown error'));
             }
         } catch (error) {
             console.error('Failed to create session:', error);
+            alert('Failed to create session: ' + error.message);
         }
-    }
+    };
 
     // Kill session
     async function killSession(name) {

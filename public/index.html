@@ -113,9 +113,45 @@
         </div>
     </div>
 
+    <!-- New Session Modal -->
+    <div class="modal hidden" id="newSessionModal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h2>New Session</h2>
+                <button class="modal-close" onclick="closeNewSessionModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem;">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="newSessionName" style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.875rem;">Session Name</label>
+                    <input type="text" id="newSessionName" class="form-input" placeholder="claude-session" style="width: 100%; padding: 0.75rem; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-family: 'IBM Plex Mono', monospace;">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="newSessionDir" style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.875rem;">Working Directory</label>
+                    <input type="text" id="newSessionDir" class="form-input" placeholder="/root" value="/root" style="width: 100%; padding: 0.75rem; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-family: 'IBM Plex Mono', monospace;">
+                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
+                        <button type="button" class="btn btn-sm" onclick="setSessionDir('/root')" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">~</button>
+                        <button type="button" class="btn btn-sm" onclick="setSessionDir('/home')" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">/home</button>
+                        <button type="button" class="btn btn-sm" onclick="setSessionDir('/var/www')" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">/var/www</button>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer;">
+                        <input type="checkbox" id="startClaudeCode" checked style="width: 1.25rem; height: 1.25rem; accent-color: var(--accent-primary);">
+                        <span style="color: var(--text-primary);">Start Claude Code automatically</span>
+                    </label>
+                    <p style="margin: 0.5rem 0 0 2rem; color: var(--text-secondary); font-size: 0.75rem;">Launch claude CLI after creating the session</p>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.75rem; padding: 1rem 1.5rem; border-top: 1px solid var(--border-color);">
+                <button class="btn" onclick="closeNewSessionModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="submitNewSession()">Create Session</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
     <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
-    <script src="app.js"></script>
+    <script src="app.js?v=1.1.0"></script>
 </body>
 </html>
