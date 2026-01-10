@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg_main">#0a0a0f</color>
+    <color name="bg_sidebar">#12121a</color>
+    <color name="accent_primary">#ff9100</color>
+    <color name="accent_secondary">#ff6b00</color>
+    <color name="text_primary">#e4e4e7</color>
+    <color name="text_secondary">#a1a1aa</color>
+</resources>

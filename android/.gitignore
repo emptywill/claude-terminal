@@ -1,0 +1,21 @@
+# Gradle
+.gradle/
+build/
+local.properties
+
+# IDE
+.idea/
+*.iml
+
+# Signing
+*.keystore
+*.jks
+keystore.properties
+
+# APK/AAB
+*.apk
+*.aab
+
+# Misc
+.DS_Store
+*.log

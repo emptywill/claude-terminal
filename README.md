@@ -81,6 +81,23 @@ Adjust the volume mount accordingly.
 | **Next** | Switch to next window |
 | **End** | Kill current session |
 
+## Android App
+
+A native Android wrapper app is included in the `android/` directory.
+
+### Features
+- Fullscreen immersive terminal experience
+- Hardware keyboard support (ESC, Ctrl+C/D/Z/L)
+- Auto-keeps screen on during sessions
+- Offline error handling with retry
+
+### Building
+1. Open `android/` folder in Android Studio
+2. Update `SERVER_URL` in `app/build.gradle`
+3. Build > Generate Signed APK
+
+See [android/README.md](android/README.md) for detailed instructions.
+
 ## Building from Source
 
 ```bash
