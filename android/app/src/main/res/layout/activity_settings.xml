@@ -43,7 +43,7 @@
         android:layout_height="wrap_content"
         android:text="Use Homelab (192.168.0.61:3555)"
         android:textColor="#0a0a0f"
-        android:backgroundTint="#ff9100"
+        android:background="#ff9100"
         android:layout_marginBottom="8dp" />
 
     <Button
@@ -52,7 +52,7 @@
         android:layout_height="wrap_content"
         android:text="Use Localhost"
         android:textColor="#e4e4e7"
-        android:backgroundTint="#2a2a3a"
+        android:background="#2a2a3a"
         android:layout_marginBottom="24dp" />
 
     <Button
@@ -63,6 +63,6 @@
         android:textColor="#0a0a0f"
         android:textStyle="bold"
         android:textSize="16sp"
-        android:backgroundTint="#ff9100" />
+        android:background="#ff9100" />
 
 </LinearLayout>
