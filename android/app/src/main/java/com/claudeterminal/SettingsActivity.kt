@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import com.claudeterminal.databinding.ActivitySettingsBinding
 
@@ -71,11 +72,18 @@ class SettingsActivity : AppCompatActivity() {
             finish()
         }
 
-        // If first run, hide back button
+        // If first run, hide back button and block system back
         if (isFirstRun(this)) {
             binding.btnBack.visibility = android.view.View.GONE
             binding.headerTitle.text = "Welcome to Claude Terminal"
             binding.headerSubtitle.text = "Enter your server address to get started"
+
+            // Block back button on first run
+            onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    // Do nothing - must configure server first
+                }
+            })
         }
     }
 
@@ -105,12 +113,5 @@ class SettingsActivity : AppCompatActivity() {
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
         finish()
-    }
-
-    override fun onBackPressed() {
-        // Prevent back if first run (must configure server)
-        if (!isFirstRun(this)) {
-            super.onBackPressed()
-        }
     }
 }

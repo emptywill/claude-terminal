@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.ClaudeTerminal" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.ClaudeTerminal" parent="Theme.MaterialComponents.NoActionBar">
         <!-- Primary colors -->
         <item name="colorPrimary">@color/accent_primary</item>
         <item name="colorPrimaryVariant">@color/accent_secondary</item>
