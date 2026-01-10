@@ -1,17 +1,12 @@
 package com.claudeterminal
 
-import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.view.GestureDetector
 import android.view.Gravity
 import android.view.KeyEvent
-import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.webkit.WebResourceError
@@ -37,7 +32,6 @@ class MainActivity : AppCompatActivity() {
     private var settingsButton: ImageButton? = null
     private var currentUrl: String? = null
     private var isFullscreen = true
-    private lateinit var gestureDetector: GestureDetector
 
     // Colors
     private val colorBg = Color.parseColor("#0a0a0f")
@@ -53,14 +47,6 @@ class MainActivity : AppCompatActivity() {
         // Fullscreen immersive mode
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-
-        // Double-tap gesture to toggle fullscreen
-        gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onDoubleTap(e: MotionEvent): Boolean {
-                toggleFullscreen()
-                return true
-            }
-        })
 
         val prefs = getSharedPreferences("claude_prefs", MODE_PRIVATE)
         val serverUrl = prefs.getString("server_url", null)
@@ -316,53 +302,35 @@ class MainActivity : AppCompatActivity() {
         // Store reference for showing/hiding
         settingsTextBtn.tag = "settings"
 
-        // Hint overlay for double-tap
-        val hintBg = GradientDrawable().apply {
-            setColor(Color.parseColor("#CC000000"))
-            cornerRadius = 24f
+        // Fullscreen exit button (always visible in corner)
+        val exitBtnBg = GradientDrawable().apply {
+            setColor(Color.parseColor("#66000000"))
+            cornerRadius = 20f
         }
-        val hintText = TextView(this).apply {
-            text = "Double-tap to exit fullscreen"
+        val exitFullscreenBtn = Button(this).apply {
+            text = "⛶"
+            textSize = 18f
             setTextColor(Color.WHITE)
-            textSize = 14f
-            setPadding(40, 24, 40, 24)
-            background = hintBg
-            visibility = View.GONE
-            tag = "hint"
+            background = exitBtnBg
+            setPadding(20, 12, 20, 12)
+            minimumWidth = 0
+            minimumHeight = 0
+            tag = "exitFullscreen"
+            setOnClickListener {
+                showSystemUI()
+            }
         }
-        container.addView(hintText, FrameLayout.LayoutParams(
+        container.addView(exitFullscreenBtn, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.WRAP_CONTENT,
             FrameLayout.LayoutParams.WRAP_CONTENT
         ).apply {
-            gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-            bottomMargin = 120
+            gravity = Gravity.TOP or Gravity.END
+            topMargin = 16
+            marginEnd = 16
         })
 
         setContentView(container)
         hideSystemUI()
-    }
-
-    private fun showHint() {
-        val container = webView?.parent as? FrameLayout ?: return
-        for (i in 0 until container.childCount) {
-            val child = container.getChildAt(i)
-            if (child.tag == "hint" && child is TextView) {
-                child.visibility = View.VISIBLE
-                child.alpha = 1f
-
-                // Fade out after 3 seconds
-                Handler(Looper.getMainLooper()).postDelayed({
-                    ObjectAnimator.ofFloat(child, "alpha", 1f, 0f).apply {
-                        duration = 500
-                        start()
-                    }
-                    Handler(Looper.getMainLooper()).postDelayed({
-                        child.visibility = View.GONE
-                    }, 500)
-                }, 3000)
-                break
-            }
-        }
     }
 
     private fun showError(error: String) {
@@ -498,16 +466,6 @@ class MainActivity : AppCompatActivity() {
         webView?.onPause()
     }
 
-    private fun toggleFullscreen() {
-        isFullscreen = !isFullscreen
-        if (isFullscreen) {
-            hideSystemUI()
-            showHint()
-        } else {
-            showSystemUI()
-        }
-    }
-
     private fun hideSystemUI() {
         isFullscreen = true
         WindowInsetsControllerCompat(window, window.decorView).let { controller ->
@@ -522,11 +480,6 @@ class MainActivity : AppCompatActivity() {
         WindowInsetsControllerCompat(window, window.decorView).let { controller ->
             controller.show(WindowInsetsCompat.Type.systemBars())
         }
-    }
-
-    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
-        ev?.let { gestureDetector.onTouchEvent(it) }
-        return super.dispatchTouchEvent(ev)
     }
 
     override fun onDestroy() {
