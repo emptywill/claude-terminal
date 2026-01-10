@@ -5,8 +5,10 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.view.GestureDetector
 import android.view.Gravity
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.webkit.WebResourceError
@@ -31,6 +33,8 @@ class MainActivity : AppCompatActivity() {
     private var webView: WebView? = null
     private var settingsButton: ImageButton? = null
     private var currentUrl: String? = null
+    private var isFullscreen = true
+    private lateinit var gestureDetector: GestureDetector
 
     // Colors
     private val colorBg = Color.parseColor("#0a0a0f")
@@ -46,6 +50,14 @@ class MainActivity : AppCompatActivity() {
         // Fullscreen immersive mode
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
+        // Double-tap gesture to toggle fullscreen
+        gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDoubleTap(e: MotionEvent): Boolean {
+                toggleFullscreen()
+                return true
+            }
+        })
 
         val prefs = getSharedPreferences("claude_prefs", MODE_PRIVATE)
         val serverUrl = prefs.getString("server_url", null)
@@ -428,7 +440,9 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         webView?.onResume()
-        hideSystemUI()
+        if (isFullscreen) {
+            hideSystemUI()
+        }
     }
 
     override fun onPause() {
@@ -436,12 +450,36 @@ class MainActivity : AppCompatActivity() {
         webView?.onPause()
     }
 
+    private fun toggleFullscreen() {
+        isFullscreen = !isFullscreen
+        if (isFullscreen) {
+            hideSystemUI()
+            Toast.makeText(this, "Fullscreen ON (double-tap to exit)", Toast.LENGTH_SHORT).show()
+        } else {
+            showSystemUI()
+            Toast.makeText(this, "Fullscreen OFF (double-tap to enter)", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun hideSystemUI() {
+        isFullscreen = true
         WindowInsetsControllerCompat(window, window.decorView).let { controller ->
             controller.hide(WindowInsetsCompat.Type.systemBars())
             controller.systemBarsBehavior =
                 WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
+    }
+
+    private fun showSystemUI() {
+        isFullscreen = false
+        WindowInsetsControllerCompat(window, window.decorView).let { controller ->
+            controller.show(WindowInsetsCompat.Type.systemBars())
+        }
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
+        ev?.let { gestureDetector.onTouchEvent(it) }
+        return super.dispatchTouchEvent(ev)
     }
 
     override fun onDestroy() {
