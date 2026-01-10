@@ -302,17 +302,17 @@ class MainActivity : AppCompatActivity() {
         // Store reference for showing/hiding
         settingsTextBtn.tag = "settings"
 
-        // Fullscreen exit button (always visible in corner)
+        // Fullscreen exit button (visible in corner, below notch area)
         val exitBtnBg = GradientDrawable().apply {
-            setColor(Color.parseColor("#66000000"))
-            cornerRadius = 20f
+            setColor(Color.parseColor("#99000000"))
+            cornerRadius = 24f
         }
         val exitFullscreenBtn = Button(this).apply {
             text = "⛶"
-            textSize = 18f
+            textSize = 22f
             setTextColor(Color.WHITE)
             background = exitBtnBg
-            setPadding(20, 12, 20, 12)
+            setPadding(28, 20, 28, 20)
             minimumWidth = 0
             minimumHeight = 0
             tag = "exitFullscreen"
@@ -325,8 +325,8 @@ class MainActivity : AppCompatActivity() {
             FrameLayout.LayoutParams.WRAP_CONTENT
         ).apply {
             gravity = Gravity.TOP or Gravity.END
-            topMargin = 16
-            marginEnd = 16
+            topMargin = 100  // Below notch/status bar area
+            marginEnd = 24
         })
 
         setContentView(container)
