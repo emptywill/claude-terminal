@@ -1,12 +1,11 @@
 package com.claudeterminal
 
 import android.annotation.SuppressLint
-import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
-import android.view.inputmethod.InputMethodManager
 import android.webkit.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
@@ -23,6 +22,15 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Check if we have a server URL configured
+        val serverUrl = SettingsActivity.getServerUrl(this)
+        if (serverUrl.isNullOrEmpty() || SettingsActivity.isFirstRun(this)) {
+            // Redirect to settings
+            startActivity(Intent(this, SettingsActivity::class.java))
+            finish()
+            return
+        }
+
         // Fullscreen immersive mode
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
@@ -30,6 +38,11 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         webView = binding.webView
+
+        // Settings button
+        binding.btnSettings.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
 
         // Configure WebView
         webView.settings.apply {
@@ -61,7 +74,9 @@ class MainActivity : AppCompatActivity() {
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                // Inject CSS to hide browser chrome if needed
+                // Hide settings button once loaded, show on error
+                binding.btnSettings.visibility = View.GONE
+                // Inject CSS/JS for app mode
                 injectCustomCSS()
             }
 
@@ -71,6 +86,8 @@ class MainActivity : AppCompatActivity() {
                 error: WebResourceError?
             ) {
                 super.onReceivedError(view, request, error)
+                // Show settings button on error
+                binding.btnSettings.visibility = View.VISIBLE
                 // Show error page
                 if (request?.isForMainFrame == true) {
                     showErrorPage(error?.description?.toString() ?: "Connection failed")
@@ -91,18 +108,14 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Load the terminal
-        loadTerminal()
+        webView.loadUrl(serverUrl)
 
         // Keep screen on while terminal is active
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
-    private fun loadTerminal() {
-        val serverUrl = BuildConfig.SERVER_URL
-        webView.loadUrl(serverUrl)
-    }
-
     private fun showErrorPage(error: String) {
+        val serverUrl = SettingsActivity.getServerUrl(this) ?: "Not configured"
         val html = """
             <!DOCTYPE html>
             <html>
@@ -123,7 +136,9 @@ class MainActivity : AppCompatActivity() {
                         box-sizing: border-box;
                     }
                     h1 { color: #ff9100; font-size: 48px; margin-bottom: 20px; }
-                    p { color: #a1a1aa; text-align: center; margin-bottom: 30px; }
+                    p { color: #a1a1aa; text-align: center; margin-bottom: 10px; }
+                    .url { font-family: monospace; color: #ff9100; font-size: 14px; margin-bottom: 30px; }
+                    .buttons { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
                     button {
                         background: #ff9100;
                         color: #000;
@@ -134,12 +149,21 @@ class MainActivity : AppCompatActivity() {
                         font-weight: 600;
                         cursor: pointer;
                     }
+                    button.secondary {
+                        background: #2a2a3a;
+                        color: #e4e4e7;
+                    }
                 </style>
             </head>
             <body>
                 <h1>⚡</h1>
-                <p>Unable to connect to server<br><small>$error</small></p>
-                <button onclick="location.reload()">Retry</button>
+                <p>Unable to connect to server</p>
+                <p class="url">$serverUrl</p>
+                <p style="font-size: 12px;">$error</p>
+                <div class="buttons">
+                    <button onclick="location.reload()">Retry</button>
+                    <button class="secondary" onclick="AndroidBridge.openSettings()">Settings</button>
+                </div>
             </body>
             </html>
         """.trimIndent()
@@ -147,25 +171,44 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun injectCustomCSS() {
-        // Hide any elements not needed in app mode
-        val css = """
-            /* App-specific overrides */
-            body {
-                -webkit-user-select: none;
-                user-select: none;
-            }
-            /* Allow text selection in terminal */
-            .xterm-screen, .xterm-rows {
-                -webkit-user-select: text !important;
-                user-select: text !important;
-            }
-        """.trimIndent()
-
+        // Hide any elements not needed in app mode, add keyboard helpers
         val js = """
             (function() {
+                // Add app-specific CSS
                 var style = document.createElement('style');
-                style.textContent = `$css`;
+                style.textContent = `
+                    body { -webkit-user-select: none; user-select: none; }
+                    .xterm-screen, .xterm-rows {
+                        -webkit-user-select: text !important;
+                        user-select: text !important;
+                    }
+                `;
                 document.head.appendChild(style);
+
+                // Expose keyboard shortcut handlers for native app
+                window.sendEscKey = function() {
+                    if (window.claudeSocket) {
+                        window.claudeSocket.emit('terminal_input', {
+                            session: window.currentSession,
+                            data: '\x1b'
+                        });
+                    }
+                    // Also try clicking ESC button if it exists
+                    var escBtn = document.getElementById('btnEsc');
+                    if (escBtn) escBtn.click();
+                };
+
+                window.sendCtrlKey = function(char) {
+                    var code = char.charCodeAt(0) - 96;
+                    if (window.claudeSocket && window.currentSession) {
+                        window.claudeSocket.emit('terminal_input', {
+                            session: window.currentSession,
+                            data: String.fromCharCode(code)
+                        });
+                    }
+                };
+
+                console.log('Claude Terminal App initialized');
             })();
         """.trimIndent()
 
@@ -176,11 +219,7 @@ class MainActivity : AppCompatActivity() {
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         when (keyCode) {
             KeyEvent.KEYCODE_ESCAPE -> {
-                // Send ESC to terminal
-                webView.evaluateJavascript(
-                    "if(window.sendEscKey) window.sendEscKey();",
-                    null
-                )
+                webView.evaluateJavascript("if(window.sendEscKey) window.sendEscKey();", null)
                 return true
             }
             KeyEvent.KEYCODE_BACK -> {
@@ -193,7 +232,7 @@ class MainActivity : AppCompatActivity() {
         return super.onKeyDown(keyCode, event)
     }
 
-    // Handle Ctrl key combinations for hardware keyboards
+    // Handle Ctrl key combinations
     override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
         if (event?.isCtrlPressed == true) {
             val char = when (keyCode) {
@@ -204,10 +243,7 @@ class MainActivity : AppCompatActivity() {
                 else -> null
             }
             if (char != null) {
-                webView.evaluateJavascript(
-                    "if(window.sendCtrlKey) window.sendCtrlKey('$char');",
-                    null
-                )
+                webView.evaluateJavascript("if(window.sendCtrlKey) window.sendCtrlKey('$char');", null)
                 return true
             }
         }
@@ -217,7 +253,6 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         webView.onResume()
-        // Go fullscreen
         hideSystemUI()
     }
 
@@ -243,18 +278,23 @@ class MainActivity : AppCompatActivity() {
 /**
  * JavaScript interface for native Android features
  */
-class WebAppInterface(private val context: Context) {
+class WebAppInterface(private val activity: MainActivity) {
 
     @JavascriptInterface
     fun showKeyboard() {
-        val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0)
+        // Trigger keyboard via WebView
     }
 
     @JavascriptInterface
     fun hideKeyboard() {
-        val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0)
+        // Hide keyboard
+    }
+
+    @JavascriptInterface
+    fun openSettings() {
+        activity.runOnUiThread {
+            activity.startActivity(Intent(activity, SettingsActivity::class.java))
+        }
     }
 
     @JavascriptInterface
@@ -265,5 +305,10 @@ class WebAppInterface(private val context: Context) {
     @JavascriptInterface
     fun getAppVersion(): String {
         return BuildConfig.VERSION_NAME
+    }
+
+    @JavascriptInterface
+    fun getServerUrl(): String {
+        return SettingsActivity.getServerUrl(activity) ?: ""
     }
 }
