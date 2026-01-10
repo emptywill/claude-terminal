@@ -109,8 +109,8 @@ class MainActivity : AppCompatActivity() {
             setStroke(2, colorBorder)
         }
         val input = EditText(this).apply {
-            hint = "http://192.168.0.61:3555"
-            setText("http://192.168.0.61:3555")
+            hint = "http://192.168.0.61:3000"
+            setText("http://192.168.0.61:3000")
             setTextColor(colorText)
             setHintTextColor(colorTextDim)
             textSize = 16f
@@ -142,7 +142,7 @@ class MainActivity : AppCompatActivity() {
             isAllCaps = false
             setPadding(32, 24, 32, 24)
             setOnClickListener {
-                input.setText("http://192.168.0.61:3555")
+                input.setText("http://192.168.0.61:3000")
             }
         }
         presetRow.addView(btnHomelab, LinearLayout.LayoutParams(
@@ -161,7 +161,7 @@ class MainActivity : AppCompatActivity() {
             isAllCaps = false
             setPadding(32, 24, 32, 24)
             setOnClickListener {
-                input.setText("http://10.0.2.2:3555")
+                input.setText("http://10.0.2.2:3000")
             }
         }
         presetRow.addView(btnLocalhost, LinearLayout.LayoutParams(
