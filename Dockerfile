@@ -20,6 +20,10 @@ RUN npm install --production
 COPY server.js .
 COPY public/ ./public/
 
+# Copy tmux configuration
+COPY tmux.conf /root/.tmux.conf
+COPY tmux.conf /etc/tmux.conf
+
 # Create data directory
 RUN mkdir -p /app/data
 
