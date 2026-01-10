@@ -1,189 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_main"
-    android:fillViewport="true">
+    android:background="#0a0a0f"
+    android:orientation="vertical"
+    android:padding="32dp"
+    android:gravity="center">
 
-    <LinearLayout
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Claude Terminal"
+        android:textColor="#ff9100"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Enter your server address"
+        android:textColor="#a1a1aa"
+        android:textSize="16sp"
+        android:layout_marginBottom="32dp" />
+
+    <EditText
+        android:id="@+id/serverUrlInput"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="24dp">
+        android:hint="http://192.168.0.61:3555"
+        android:textColor="#e4e4e7"
+        android:textColorHint="#71717a"
+        android:background="#1a1a24"
+        android:padding="16dp"
+        android:textSize="16sp"
+        android:inputType="textUri"
+        android:layout_marginBottom="16dp" />
 
-        <!-- Header -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_marginBottom="32dp">
+    <Button
+        android:id="@+id/btnPresetHomelab"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Use Homelab (192.168.0.61:3555)"
+        android:textColor="#0a0a0f"
+        android:backgroundTint="#ff9100"
+        android:layout_marginBottom="8dp" />
 
-            <ImageButton
-                android:id="@+id/btnBack"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/ic_arrow_back"
-                android:contentDescription="Back"
-                android:layout_marginBottom="16dp"
-                app:tint="@color/text_primary" />
+    <Button
+        android:id="@+id/btnPresetLocalhost"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Use Localhost"
+        android:textColor="#e4e4e7"
+        android:backgroundTint="#2a2a3a"
+        android:layout_marginBottom="24dp" />
 
-            <TextView
-                android:id="@+id/headerTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Settings"
-                android:textColor="@color/text_primary"
-                android:textSize="28sp"
-                android:textStyle="bold" />
+    <Button
+        android:id="@+id/btnConnect"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="Connect"
+        android:textColor="#0a0a0f"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:backgroundTint="#ff9100" />
 
-            <TextView
-                android:id="@+id/headerSubtitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Configure your terminal server"
-                android:textColor="@color/text_secondary"
-                android:textSize="16sp"
-                android:layout_marginTop="4dp" />
-        </LinearLayout>
-
-        <!-- Server URL Card -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/bg_sidebar"
-            app:cardCornerRadius="12dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="@color/border"
-            android:layout_marginBottom="16dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Server Address"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="14sp"
-                    android:layout_marginBottom="12dp" />
-
-                <!-- Protocol Toggle -->
-                <com.google.android.material.button.MaterialButtonToggleGroup
-                    android:id="@+id/protocolToggle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    app:singleSelection="true"
-                    app:selectionRequired="true">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnHttp"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="HTTP"
-                        style="@style/Widget.Material3.Button.OutlinedButton" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnHttps"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="HTTPS"
-                        style="@style/Widget.Material3.Button.OutlinedButton" />
-
-                </com.google.android.material.button.MaterialButtonToggleGroup>
-
-                <!-- URL Input -->
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="hostname:port"
-                    app:boxBackgroundColor="@color/bg_main"
-                    app:boxStrokeColor="@color/accent_primary"
-                    app:hintTextColor="@color/text_secondary">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/serverUrlInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="textUri"
-                        android:textColor="@color/text_primary"
-                        android:fontFamily="monospace"
-                        android:textSize="16sp" />
-
-                </com.google.android.material.textfield.TextInputLayout>
-
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Quick Presets -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Quick Presets"
-            android:textColor="@color/text_secondary"
-            android:textSize="14sp"
-            android:layout_marginBottom="12dp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="32dp">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnPresetLocal"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginEnd="8dp"
-                android:text="Homelab"
-                android:textSize="12sp"
-                style="@style/Widget.Material3.Button.TonalButton" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnPresetLocalhost"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Localhost"
-                android:textSize="12sp"
-                style="@style/Widget.Material3.Button.TonalButton" />
-
-        </LinearLayout>
-
-        <!-- Spacer -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
-        <!-- Connect Button -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSave"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="Connect"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            app:backgroundTint="@color/accent_primary"
-            app:cornerRadius="12dp" />
-
-        <!-- Version -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Claude Terminal v1.0"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp"
-            android:gravity="center"
-            android:layout_marginTop="16dp" />
-
-    </LinearLayout>
-</ScrollView>
+</LinearLayout>

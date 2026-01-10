@@ -2,17 +2,13 @@ package com.claudeterminal
 
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Bundle
+import android.widget.Button
+import android.widget.EditText
 import android.widget.Toast
-import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
-import com.claudeterminal.databinding.ActivitySettingsBinding
 
 class SettingsActivity : AppCompatActivity() {
-
-    private lateinit var binding: ActivitySettingsBinding
-    private lateinit var prefs: SharedPreferences
 
     companion object {
         private const val PREFS_NAME = "claude_terminal_prefs"
@@ -37,81 +33,54 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivitySettingsBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        setContentView(R.layout.activity_settings)
 
-        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val serverUrlInput = findViewById<EditText>(R.id.serverUrlInput)
+        val btnPresetHomelab = findViewById<Button>(R.id.btnPresetHomelab)
+        val btnPresetLocalhost = findViewById<Button>(R.id.btnPresetLocalhost)
+        val btnConnect = findViewById<Button>(R.id.btnConnect)
 
         // Load current URL
-        val currentUrl = prefs.getString(KEY_SERVER_URL, "")
-        binding.serverUrlInput.setText(currentUrl)
-
-        // Protocol toggle
-        binding.protocolToggle.check(
-            if (currentUrl?.startsWith("https") == true) R.id.btnHttps else R.id.btnHttp
-        )
+        val currentUrl = getServerUrl(this)
+        if (!currentUrl.isNullOrEmpty()) {
+            serverUrlInput.setText(currentUrl)
+        }
 
         // Quick presets
-        binding.btnPresetLocal.setOnClickListener {
-            binding.serverUrlInput.setText("192.168.0.61:3555")
-            binding.protocolToggle.check(R.id.btnHttp)
+        btnPresetHomelab.setOnClickListener {
+            serverUrlInput.setText("http://192.168.0.61:3555")
         }
 
-        binding.btnPresetLocalhost.setOnClickListener {
-            binding.serverUrlInput.setText("localhost:3000")
-            binding.protocolToggle.check(R.id.btnHttp)
+        btnPresetLocalhost.setOnClickListener {
+            serverUrlInput.setText("http://10.0.2.2:3555")
         }
 
-        // Save button
-        binding.btnSave.setOnClickListener {
-            saveAndConnect()
-        }
+        // Connect button
+        btnConnect.setOnClickListener {
+            var url = serverUrlInput.text.toString().trim()
 
-        // Back button
-        binding.btnBack.setOnClickListener {
+            if (url.isEmpty()) {
+                Toast.makeText(this, "Please enter a server address", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // Add http if no protocol
+            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                url = "http://$url"
+            }
+
+            // Save to preferences
+            val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putString(KEY_SERVER_URL, url).apply()
+            setFirstRunComplete(this)
+
+            Toast.makeText(this, "Connecting...", Toast.LENGTH_SHORT).show()
+
+            // Launch main activity
+            val intent = Intent(this, MainActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
             finish()
         }
-
-        // If first run, hide back button and block system back
-        if (isFirstRun(this)) {
-            binding.btnBack.visibility = android.view.View.GONE
-            binding.headerTitle.text = "Welcome to Claude Terminal"
-            binding.headerSubtitle.text = "Enter your server address to get started"
-
-            // Block back button on first run
-            onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-                override fun handleOnBackPressed() {
-                    // Do nothing - must configure server first
-                }
-            })
-        }
-    }
-
-    private fun saveAndConnect() {
-        var url = binding.serverUrlInput.text.toString().trim()
-
-        if (url.isEmpty()) {
-            Toast.makeText(this, "Please enter a server address", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        // Remove any existing protocol
-        url = url.removePrefix("http://").removePrefix("https://")
-
-        // Add selected protocol
-        val protocol = if (binding.protocolToggle.checkedButtonId == R.id.btnHttps) "https" else "http"
-        val fullUrl = "$protocol://$url"
-
-        // Save to preferences
-        prefs.edit().putString(KEY_SERVER_URL, fullUrl).apply()
-        setFirstRunComplete(this)
-
-        Toast.makeText(this, "Connecting to $fullUrl", Toast.LENGTH_SHORT).show()
-
-        // Launch main activity
-        val intent = Intent(this, MainActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        startActivity(intent)
-        finish()
     }
 }
