@@ -237,6 +237,11 @@ class MainActivity : AppCompatActivity() {
                     super.onPageFinished(view, url)
                     settingsButton?.visibility = View.GONE
                     injectHelpers()
+
+                    // Show exit fullscreen button only after login
+                    val exitBtn = (parent as? FrameLayout)?.findViewWithTag<View>("exitFullscreen")
+                    val isLoginPage = url?.contains("login") == true
+                    exitBtn?.visibility = if (isLoginPage) View.GONE else View.VISIBLE
                 }
 
                 override fun onReceivedError(
@@ -315,6 +320,7 @@ class MainActivity : AppCompatActivity() {
             setPadding(28, 20, 28, 20)
             minimumWidth = 0
             minimumHeight = 0
+            visibility = View.GONE  // Hidden until past login page
             tag = "exitFullscreen"
             setOnClickListener {
                 showSystemUI()
