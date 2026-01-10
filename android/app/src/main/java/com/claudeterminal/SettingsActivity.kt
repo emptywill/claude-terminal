@@ -5,7 +5,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
 class SettingsActivity : AppCompatActivity() {
@@ -24,11 +23,6 @@ class SettingsActivity : AppCompatActivity() {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             return prefs.getBoolean(KEY_FIRST_RUN, true)
         }
-
-        fun setFirstRunComplete(context: Context) {
-            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            prefs.edit().putBoolean(KEY_FIRST_RUN, false).apply()
-        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,32 +30,19 @@ class SettingsActivity : AppCompatActivity() {
         setContentView(R.layout.activity_settings)
 
         val serverUrlInput = findViewById<EditText>(R.id.serverUrlInput)
-        val btnPresetHomelab = findViewById<Button>(R.id.btnPresetHomelab)
-        val btnPresetLocalhost = findViewById<Button>(R.id.btnPresetLocalhost)
         val btnConnect = findViewById<Button>(R.id.btnConnect)
 
-        // Load current URL
+        // Load current URL if exists
         val currentUrl = getServerUrl(this)
         if (!currentUrl.isNullOrEmpty()) {
             serverUrlInput.setText(currentUrl)
         }
 
-        // Quick presets
-        btnPresetHomelab.setOnClickListener {
-            serverUrlInput.setText("http://192.168.0.61:3555")
-        }
-
-        btnPresetLocalhost.setOnClickListener {
-            serverUrlInput.setText("http://10.0.2.2:3555")
-        }
-
-        // Connect button
         btnConnect.setOnClickListener {
             var url = serverUrlInput.text.toString().trim()
 
             if (url.isEmpty()) {
-                Toast.makeText(this, "Please enter a server address", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
+                url = "http://192.168.0.61:3555"
             }
 
             // Add http if no protocol
@@ -69,14 +50,14 @@ class SettingsActivity : AppCompatActivity() {
                 url = "http://$url"
             }
 
-            // Save to preferences
+            // Save
             val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            prefs.edit().putString(KEY_SERVER_URL, url).apply()
-            setFirstRunComplete(this)
+            prefs.edit()
+                .putString(KEY_SERVER_URL, url)
+                .putBoolean(KEY_FIRST_RUN, false)
+                .apply()
 
-            Toast.makeText(this, "Connecting...", Toast.LENGTH_SHORT).show()
-
-            // Launch main activity
+            // Launch main
             val intent = Intent(this, MainActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)
