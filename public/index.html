@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Claude Terminal</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>⚡</text></svg>">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ff9100'><path d='M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5A2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5z'/></svg>">
+    <link rel="stylesheet" href="styles.css?v=2.2.0">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css">
 </head>
@@ -13,101 +13,115 @@
     <div class="app-container">
         <!-- Header -->
         <header class="app-header">
-            <div class="header-left">
-                <span class="app-title">Claude Terminal</span>
+            <div class="app-title">
+                <svg class="app-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+                    <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5A2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5z"/>
+                </svg>
+                Claude Terminal
             </div>
             <div class="header-right">
-                <span class="user-name" id="userName"></span>
-                <button class="btn btn-sm" onclick="logout()">Logout</button>
+                <div class="user-menu">
+                    <button class="user-menu-btn" id="userMenuBtn">
+                        <span id="userName">admin</span>
+                        <span class="dropdown-arrow">▼</span>
+                    </button>
+                    <div class="user-menu-dropdown hidden" id="userMenuDropdown">
+                        <button class="dropdown-item" id="manageServersBtn">Manage Servers</button>
+                        <button class="dropdown-item" id="changePasswordBtn">Change Password</button>
+                        <hr class="dropdown-divider">
+                        <button class="dropdown-item" onclick="logout()">Logout</button>
+                    </div>
+                </div>
             </div>
         </header>
 
         <!-- Main Layout -->
         <div class="claude-code-layout">
-            <!-- Session Manager (Left Sidebar) -->
+            <!-- Session Manager Sidebar -->
             <aside class="session-manager">
                 <div class="session-manager-header">
-                    <h3>Tmux Sessions</h3>
-                    <button class="btn-icon" id="refreshSessions" title="Refresh Sessions">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M23 4v6h-6M1 20v-6h6"/>
-                            <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
-                        </svg>
-                    </button>
+                    <h3>Sessions</h3>
                 </div>
+
                 <div class="session-manager-content">
                     <div class="session-list" id="sessionList">
                         <!-- Sessions loaded dynamically -->
                     </div>
-                    <div class="session-manager-footer">
-                        <button class="btn btn-primary btn-full" id="createSession">
-                            + New Session
-                        </button>
-                    </div>
                 </div>
-                <button class="sidebar-collapse-toggle" id="toggleSessions" title="Toggle Sessions">◀</button>
+
+                <div class="session-manager-footer">
+                    <button class="btn btn-primary btn-full" id="createSession">+ New Session</button>
+                </div>
+
+                <button class="sidebar-collapse-toggle" id="toggleSessions">◀</button>
             </aside>
 
-            <!-- Terminal Area -->
+            <!-- Terminal Main Area -->
             <main class="claude-terminal-main">
-                <!-- Session Info Bar -->
                 <div class="session-info-bar">
                     <div class="session-info-left">
-                        <span class="session-badge">
+                        <div class="session-badge">
                             <span class="session-icon">⚡</span>
                             <span id="currentSessionName">No session selected</span>
-                        </span>
-                        <span class="session-detail" id="sessionDetail"></span>
-                    </div>
-                    <div class="session-info-right">
-                        <button class="btn-icon-small" id="btnFullscreen" title="Toggle Fullscreen">
-                            ⛶
-                        </button>
+                            <span class="session-server-tag" id="currentServerInfo"></span>
+                        </div>
+                        <div class="window-tabs" id="windowTabs">
+                            <!-- Window tabs loaded dynamically -->
+                        </div>
                     </div>
                 </div>
 
-                <!-- Tmux Controls -->
+                <!-- Terminal Controls -->
                 <div class="tmux-pane-controls">
                     <div class="btn-group">
-                        <button class="tmux-pane-btn btn-warning" id="btnEsc" title="Send ESC (Stop Claude)">
-                            <span>ESC</span>
+                        <button class="tmux-pane-btn btn-warning mobile-only" id="btnEsc" title="Stop Claude thinking (ESC)">
+                            <span class="btn-icon-robot">🤖</span>
+                            <span>Stop</span>
                         </button>
-                        <button class="tmux-pane-btn" id="btnKeyboard" title="Toggle Keyboard">
-                            <span>⌨️</span>
-                        </button>
-                        <button class="tmux-pane-btn" id="btnTmuxScroll" title="Toggle Scroll Mode">
+                        <button class="tmux-pane-btn mobile-only" id="btnTmuxScroll" title="Toggle scroll mode">
                             <span>📜</span>
+                            <span>Scroll</span>
                         </button>
-                        <button class="tmux-pane-btn" id="btnTmuxCopy" title="Copy Selected Text">
+                        <button class="tmux-pane-btn mobile-only" id="btnTmuxCopy" title="Copy selected text">
                             <span>📋</span>
+                            <span>Copy</span>
                         </button>
-                        <button class="tmux-pane-btn" id="btnPaste" title="Paste from Clipboard">
+                        <button class="tmux-pane-btn mobile-only" id="btnPaste" title="Paste from clipboard">
                             <span>📥</span>
+                            <span>Paste</span>
                         </button>
-                        <button class="tmux-pane-btn" id="btnZoomOut" title="Decrease Font Size">
-                            <span>A-</span>
+                        <button class="tmux-pane-btn" id="btnZoomOut" title="Decrease font size">
+                            <span>🔍</span>
+                            <span>Zoom -</span>
                         </button>
-                        <button class="tmux-pane-btn" id="btnZoomIn" title="Increase Font Size">
-                            <span>A+</span>
+                        <button class="tmux-pane-btn" id="btnZoomIn" title="Increase font size">
+                            <span>🔎</span>
+                            <span>Zoom +</span>
                         </button>
-                        <button class="tmux-pane-btn" id="btnNewWindow" title="Create New Window">
-                            <span>+ Win</span>
+                        <button class="tmux-pane-btn" id="btnNewWindow" title="Create new tmux window">
+                            <span>➕</span>
+                            <span>Window</span>
                         </button>
-                        <button class="tmux-pane-btn" id="btnNextWindow" title="Next Window">
+                        <button class="tmux-pane-btn" id="btnNextWindow" title="Switch to next window">
+                            <span>⏭️</span>
                             <span>Next</span>
                         </button>
-                        <button class="tmux-pane-btn btn-danger" id="btnEndSession" title="End Current Session">
+                        <button class="tmux-pane-btn btn-danger" id="btnEndSession" title="Kill this session">
+                            <span>⏹️</span>
                             <span>End</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- Terminal -->
+                <!-- Terminal Container -->
                 <div class="claude-terminal-container" id="claudeTerminalContainer">
-                    <div class="scroll-overlay" id="scrollOverlay">
-                        <button class="scroll-overlay-btn" id="btnScrollUp" title="Scroll Up">▲</button>
-                        <button class="scroll-overlay-btn" id="btnScrollDown" title="Scroll Down">▼</button>
-                    </div>
+                    <!-- xterm.js terminal renders here -->
+                </div>
+
+                <!-- Scroll Overlay -->
+                <div class="scroll-overlay" id="scrollOverlay">
+                    <button class="scroll-overlay-btn" id="btnScrollUp">▲</button>
+                    <button class="scroll-overlay-btn" id="btnScrollDown">▼</button>
                 </div>
             </main>
         </div>
@@ -115,36 +129,199 @@
 
     <!-- New Session Modal -->
     <div class="modal hidden" id="newSessionModal">
-        <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-content compact">
             <div class="modal-header">
                 <h2>New Session</h2>
                 <button class="modal-close" onclick="closeNewSessionModal()">&times;</button>
             </div>
-            <div class="modal-body" style="padding: 1.5rem;">
-                <div class="form-group" style="margin-bottom: 1rem;">
-                    <label for="newSessionName" style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.875rem;">Session Name</label>
-                    <input type="text" id="newSessionName" class="form-input" placeholder="claude-session" style="width: 100%; padding: 0.75rem; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-family: 'IBM Plex Mono', monospace;">
-                </div>
-                <div class="form-group" style="margin-bottom: 1rem;">
-                    <label for="newSessionDir" style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.875rem;">Working Directory</label>
-                    <input type="text" id="newSessionDir" class="form-input" placeholder="/root" value="/root" style="width: 100%; padding: 0.75rem; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-family: 'IBM Plex Mono', monospace;">
-                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
-                        <button type="button" class="btn btn-sm" onclick="setSessionDir('/root')" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">~</button>
-                        <button type="button" class="btn btn-sm" onclick="setSessionDir('/home')" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">/home</button>
-                        <button type="button" class="btn btn-sm" onclick="setSessionDir('/var/www')" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">/var/www</button>
+            <div class="modal-body">
+                <!-- Server Selection -->
+                <div class="form-group">
+                    <label for="sessionServer">Server</label>
+                    <div class="server-select-wrapper">
+                        <select id="sessionServer" class="form-select">
+                            <!-- Options loaded dynamically -->
+                        </select>
+                        <button type="button" class="btn btn-sm" id="addNewServerBtn" title="Add new server">+</button>
                     </div>
                 </div>
-                <div class="form-group" style="margin-bottom: 1rem;">
-                    <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer;">
-                        <input type="checkbox" id="startClaudeCode" checked style="width: 1.25rem; height: 1.25rem; accent-color: var(--accent-primary);">
-                        <span style="color: var(--text-primary);">Start Claude Code automatically</span>
+
+                <!-- Add New Server Inline Form (hidden by default) -->
+                <div class="inline-server-form hidden" id="inlineServerForm">
+                    <div class="form-group">
+                        <label for="inlineServerName">Server Name</label>
+                        <input type="text" id="inlineServerName" class="form-input" placeholder="My Server">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group flex-2">
+                            <label for="inlineServerHost">Host</label>
+                            <input type="text" id="inlineServerHost" class="form-input" placeholder="192.168.0.100">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="inlineServerPort">Port</label>
+                            <input type="number" id="inlineServerPort" class="form-input" placeholder="22" value="22">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="inlineServerUser">Username</label>
+                        <input type="text" id="inlineServerUser" class="form-input" placeholder="root">
+                    </div>
+                    <div class="form-group">
+                        <label for="inlineServerAuthType">Authentication</label>
+                        <select id="inlineServerAuthType" class="form-select">
+                            <option value="password">Password</option>
+                            <option value="key">SSH Key</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="inlinePasswordGroup">
+                        <label for="inlineServerPassword">Password</label>
+                        <input type="password" id="inlineServerPassword" class="form-input" placeholder="Enter password">
+                    </div>
+                    <div class="form-group hidden" id="inlineKeyGroup">
+                        <label for="inlineServerKey">Private Key</label>
+                        <textarea id="inlineServerKey" class="form-input form-textarea" placeholder="Paste your private key here..."></textarea>
+                    </div>
+                    <div class="inline-form-actions">
+                        <button type="button" class="btn btn-sm" onclick="cancelInlineServer()">Cancel</button>
+                        <button type="button" class="btn btn-sm btn-primary" onclick="saveInlineServer()">Save Server</button>
+                    </div>
+                </div>
+
+                <hr class="form-divider">
+
+                <!-- Session Details -->
+                <div class="form-group">
+                    <label for="newSessionName">Session Name</label>
+                    <input type="text" id="newSessionName" class="form-input" placeholder="claude-session">
+                </div>
+                <div class="form-group">
+                    <label for="newSessionDir">Working Directory</label>
+                    <input type="text" id="newSessionDir" class="form-input" placeholder="/srv/containers" value="/srv/containers">
+                    <div class="quick-dirs">
+                        <button type="button" onclick="setSessionDir('/srv/containers')">containers</button>
+                        <button type="button" onclick="setSessionDir('/root')">~</button>
+                        <button type="button" onclick="setSessionDir('/home')">home</button>
+                    </div>
+                </div>
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="startClaudeCode" checked>
+                        <span>Start Claude Code automatically</span>
                     </label>
-                    <p style="margin: 0.5rem 0 0 2rem; color: var(--text-secondary); font-size: 0.75rem;">Launch claude CLI after creating the session</p>
                 </div>
             </div>
-            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.75rem; padding: 1rem 1.5rem; border-top: 1px solid var(--border-color);">
+            <div class="modal-footer">
                 <button class="btn" onclick="closeNewSessionModal()">Cancel</button>
                 <button class="btn btn-primary" onclick="submitNewSession()">Create Session</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Servers Management Modal -->
+    <div class="modal hidden" id="serversModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Manage Servers</h2>
+                <button class="modal-close" onclick="closeServersModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="server-list" id="serverList">
+                    <!-- Servers loaded dynamically -->
+                </div>
+                <button class="btn btn-primary btn-full" id="addServerModalBtn">+ Add Server</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Server Modal -->
+    <div class="modal hidden" id="editServerModal">
+        <div class="modal-content compact">
+            <div class="modal-header">
+                <h2 id="editServerTitle">Add Server</h2>
+                <button class="modal-close" onclick="closeEditServerModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editServerId">
+                <div class="form-group">
+                    <label for="editServerName">Server Name</label>
+                    <input type="text" id="editServerName" class="form-input" placeholder="My Server">
+                </div>
+                <div class="form-row">
+                    <div class="form-group flex-2">
+                        <label for="editServerHost">Host / IP</label>
+                        <input type="text" id="editServerHost" class="form-input" placeholder="192.168.0.100">
+                    </div>
+                    <div class="form-group flex-1">
+                        <label for="editServerPort">Port</label>
+                        <input type="number" id="editServerPort" class="form-input" placeholder="22" value="22">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="editServerUser">Username</label>
+                    <input type="text" id="editServerUser" class="form-input" placeholder="root">
+                </div>
+                <div class="form-group">
+                    <label for="editServerAuthType">Authentication Method</label>
+                    <select id="editServerAuthType" class="form-select">
+                        <option value="password">Password</option>
+                        <option value="key">SSH Private Key</option>
+                    </select>
+                </div>
+                <div class="form-group" id="editPasswordGroup">
+                    <label for="editServerPassword">Password</label>
+                    <input type="password" id="editServerPassword" class="form-input" placeholder="Enter password">
+                </div>
+                <div class="form-group hidden" id="editKeyGroup">
+                    <label for="editServerKey">Private Key</label>
+                    <textarea id="editServerKey" class="form-input form-textarea" placeholder="Paste your SSH private key here..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeEditServerModal()">Cancel</button>
+                <button class="btn" id="testServerBtn" onclick="testServerConnection()">Test Connection</button>
+                <button class="btn btn-primary" onclick="saveServer()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div class="modal hidden" id="changePasswordModal">
+        <div class="modal-content compact">
+            <div class="modal-header">
+                <h2>Change Password</h2>
+                <button class="modal-close" onclick="closeChangePasswordModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="currentPassword">Current Password</label>
+                    <input type="password" id="currentPassword" class="form-input" placeholder="Enter current password">
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">New Password</label>
+                    <input type="password" id="newPassword" class="form-input" placeholder="Enter new password">
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm New Password</label>
+                    <input type="password" id="confirmPassword" class="form-input" placeholder="Confirm new password">
+                </div>
+                <div id="passwordError" class="form-error hidden"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeChangePasswordModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="submitChangePassword()">Change Password</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal hidden" id="confirmModal">
+        <div class="modal-content confirm-modal">
+            <div class="confirm-icon" id="confirmIcon">⚠️</div>
+            <h3 id="confirmTitle">Confirm</h3>
+            <p id="confirmMessage">Are you sure?</p>
+            <div class="confirm-buttons">
+                <button class="btn" id="confirmCancel">Cancel</button>
+                <button class="btn btn-danger" id="confirmOk">Confirm</button>
             </div>
         </div>
     </div>
@@ -152,6 +329,6 @@
     <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
     <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
-    <script src="app.js?v=1.1.0"></script>
+    <script src="app.js?v=2.2.0"></script>
 </body>
 </html>

@@ -19,6 +19,8 @@ RUN npm install --production
 # Copy application files
 COPY server.js .
 COPY public/ ./public/
+COPY validate.sh /app/validate.sh
+RUN chmod +x /app/validate.sh
 
 # Copy tmux configuration
 COPY tmux.conf /root/.tmux.conf

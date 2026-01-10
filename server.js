@@ -7,6 +7,8 @@ const fs = require('fs');
 const session = require('express-session');
 const FileStore = require('session-file-store')(session);
 const bcrypt = require('bcryptjs');
+const { Client } = require('ssh2');
+const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -45,6 +47,7 @@ app.use(express.json());
 
 // User credentials file
 const USERS_FILE = '/app/data/users.json';
+const SERVERS_FILE = '/app/data/servers.json';
 
 // Initialize default users if file doesn't exist
 function initializeUsers() {
@@ -75,7 +78,38 @@ function saveUsers(users) {
     fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
 }
 
+// Initialize servers file with localhost as default
+function initializeServers() {
+    if (!fs.existsSync(SERVERS_FILE)) {
+        const defaultServers = [{
+            id: 'local',
+            name: 'Localhost',
+            host: 'localhost',
+            port: 22,
+            username: 'root',
+            authType: 'local', // 'local' means use local tmux socket, not SSH
+            isDefault: true,
+            createdAt: new Date().toISOString()
+        }];
+        fs.writeFileSync(SERVERS_FILE, JSON.stringify(defaultServers, null, 2));
+        console.log('Created default servers configuration with localhost');
+    }
+}
+
+function getServers() {
+    try {
+        return JSON.parse(fs.readFileSync(SERVERS_FILE, 'utf8'));
+    } catch (e) {
+        return [];
+    }
+}
+
+function saveServers(servers) {
+    fs.writeFileSync(SERVERS_FILE, JSON.stringify(servers, null, 2));
+}
+
 initializeUsers();
+initializeServers();
 
 // Authentication middleware
 function requireAuth(req, res, next) {
@@ -104,7 +138,7 @@ app.use(express.static('public'));
 
 // Auth endpoints
 app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, rememberMe } = req.body;
     if (!username || !password) {
         return res.status(400).json({ error: 'Username and password required' });
     }
@@ -119,6 +153,13 @@ app.post('/api/login', (req, res) => {
     req.session.authenticated = true;
     req.session.username = username;
     req.session.loginTime = new Date().toISOString();
+
+    // Set longer session expiry if "Remember me" is checked (30 days vs 24 hours)
+    if (rememberMe) {
+        req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+    } else {
+        req.session.cookie.maxAge = 24 * 60 * 60 * 1000; // 24 hours
+    }
 
     res.json({ success: true, username });
 });
@@ -177,7 +218,569 @@ app.use('/api', (req, res, next) => {
     return requireAuth(req, res, next);
 });
 
-// Tmux session management
+// ===== SERVER MANAGEMENT API =====
+
+// Get all servers
+app.get('/api/servers', (req, res) => {
+    const servers = getServers();
+    // Don't send passwords/keys to client
+    const safeServers = servers.map(s => ({
+        id: s.id,
+        name: s.name,
+        host: s.host,
+        port: s.port,
+        username: s.username,
+        authType: s.authType,
+        isDefault: s.isDefault,
+        createdAt: s.createdAt
+    }));
+    res.json(safeServers);
+});
+
+// Add new server
+app.post('/api/servers', (req, res) => {
+    const { name, host, port, username, authType, password, privateKey } = req.body;
+
+    if (!name || !host || !username) {
+        return res.status(400).json({ error: 'Name, host, and username are required' });
+    }
+
+    if (authType === 'password' && !password) {
+        return res.status(400).json({ error: 'Password is required for password authentication' });
+    }
+
+    if (authType === 'key' && !privateKey) {
+        return res.status(400).json({ error: 'Private key is required for key authentication' });
+    }
+
+    const servers = getServers();
+    const newServer = {
+        id: uuidv4(),
+        name,
+        host,
+        port: port || 22,
+        username,
+        authType: authType || 'password',
+        password: authType === 'password' ? password : undefined,
+        privateKey: authType === 'key' ? privateKey : undefined,
+        isDefault: false,
+        createdAt: new Date().toISOString()
+    };
+
+    servers.push(newServer);
+    saveServers(servers);
+
+    res.json({
+        success: true,
+        server: {
+            id: newServer.id,
+            name: newServer.name,
+            host: newServer.host,
+            port: newServer.port,
+            username: newServer.username,
+            authType: newServer.authType,
+            isDefault: newServer.isDefault
+        }
+    });
+});
+
+// Update server
+app.put('/api/servers/:id', (req, res) => {
+    const { id } = req.params;
+    const { name, host, port, username, authType, password, privateKey } = req.body;
+
+    const servers = getServers();
+    const serverIndex = servers.findIndex(s => s.id === id);
+
+    if (serverIndex === -1) {
+        return res.status(404).json({ error: 'Server not found' });
+    }
+
+    // Don't allow editing the local server's connection settings
+    if (servers[serverIndex].authType === 'local') {
+        servers[serverIndex].name = name || servers[serverIndex].name;
+    } else {
+        servers[serverIndex] = {
+            ...servers[serverIndex],
+            name: name || servers[serverIndex].name,
+            host: host || servers[serverIndex].host,
+            port: port || servers[serverIndex].port,
+            username: username || servers[serverIndex].username,
+            authType: authType || servers[serverIndex].authType,
+            password: authType === 'password' ? (password || servers[serverIndex].password) : undefined,
+            privateKey: authType === 'key' ? (privateKey || servers[serverIndex].privateKey) : undefined,
+            updatedAt: new Date().toISOString()
+        };
+    }
+
+    saveServers(servers);
+    res.json({ success: true });
+});
+
+// Delete server
+app.delete('/api/servers/:id', (req, res) => {
+    const { id } = req.params;
+
+    const servers = getServers();
+    const serverIndex = servers.findIndex(s => s.id === id);
+
+    if (serverIndex === -1) {
+        return res.status(404).json({ error: 'Server not found' });
+    }
+
+    // Don't allow deleting the local server
+    if (servers[serverIndex].authType === 'local') {
+        return res.status(400).json({ error: 'Cannot delete the localhost server' });
+    }
+
+    servers.splice(serverIndex, 1);
+    saveServers(servers);
+
+    res.json({ success: true });
+});
+
+// Set default server
+app.post('/api/servers/:id/default', (req, res) => {
+    const { id } = req.params;
+
+    const servers = getServers();
+    const serverIndex = servers.findIndex(s => s.id === id);
+
+    if (serverIndex === -1) {
+        return res.status(404).json({ error: 'Server not found' });
+    }
+
+    servers.forEach(s => s.isDefault = false);
+    servers[serverIndex].isDefault = true;
+    saveServers(servers);
+
+    res.json({ success: true });
+});
+
+// Test server connection
+app.post('/api/servers/:id/test', async (req, res) => {
+    const { id } = req.params;
+
+    const servers = getServers();
+    const server = servers.find(s => s.id === id);
+
+    if (!server) {
+        return res.status(404).json({ error: 'Server not found' });
+    }
+
+    if (server.authType === 'local') {
+        // Test local tmux
+        exec('tmux list-sessions 2>/dev/null', (error, stdout) => {
+            res.json({ success: true, message: 'Local tmux is accessible' });
+        });
+        return;
+    }
+
+    // Test SSH connection
+    const conn = new Client();
+    let responded = false;
+
+    conn.on('ready', () => {
+        if (!responded) {
+            responded = true;
+            conn.end();
+            res.json({ success: true, message: 'SSH connection successful' });
+        }
+    });
+
+    conn.on('error', (err) => {
+        if (!responded) {
+            responded = true;
+            res.status(500).json({ error: `Connection failed: ${err.message}` });
+        }
+    });
+
+    const connectConfig = {
+        host: server.host,
+        port: server.port,
+        username: server.username,
+        readyTimeout: 10000
+    };
+
+    if (server.authType === 'password') {
+        connectConfig.password = server.password;
+    } else if (server.authType === 'key') {
+        connectConfig.privateKey = server.privateKey;
+    }
+
+    try {
+        conn.connect(connectConfig);
+    } catch (err) {
+        if (!responded) {
+            responded = true;
+            res.status(500).json({ error: `Connection failed: ${err.message}` });
+        }
+    }
+});
+
+// ===== TMUX SESSION MANAGEMENT =====
+
+// Get tmux sessions for a server
+app.get('/api/servers/:id/sessions', (req, res) => {
+    const { id } = req.params;
+
+    const servers = getServers();
+    const server = servers.find(s => s.id === id);
+
+    if (!server) {
+        return res.status(404).json({ error: 'Server not found' });
+    }
+
+    if (server.authType === 'local') {
+        // Local tmux sessions
+        exec('tmux list-sessions -F "#{session_name}|#{session_windows}|#{session_created}|#{session_attached}" 2>/dev/null', (error, stdout) => {
+            if (error) {
+                res.json([]);
+                return;
+            }
+
+            const sessions = stdout.trim().split('\n').filter(line => line).map(line => {
+                const [name, windows, created, attached] = line.split('|');
+                return {
+                    name,
+                    windows: parseInt(windows) || 0,
+                    created: parseInt(created) || 0,
+                    attached: attached === '1',
+                    createdDate: new Date(parseInt(created) * 1000).toISOString(),
+                    serverId: id
+                };
+            });
+
+            res.json(sessions);
+        });
+    } else {
+        // Remote tmux sessions via SSH
+        const conn = new Client();
+
+        conn.on('ready', () => {
+            conn.exec('tmux list-sessions -F "#{session_name}|#{session_windows}|#{session_created}|#{session_attached}" 2>/dev/null', (err, stream) => {
+                if (err) {
+                    conn.end();
+                    return res.json([]);
+                }
+
+                let data = '';
+                stream.on('data', (chunk) => {
+                    data += chunk.toString();
+                });
+
+                stream.on('close', () => {
+                    conn.end();
+                    const sessions = data.trim().split('\n').filter(line => line).map(line => {
+                        const [name, windows, created, attached] = line.split('|');
+                        return {
+                            name,
+                            windows: parseInt(windows) || 0,
+                            created: parseInt(created) || 0,
+                            attached: attached === '1',
+                            createdDate: new Date(parseInt(created) * 1000).toISOString(),
+                            serverId: id
+                        };
+                    });
+                    res.json(sessions);
+                });
+            });
+        });
+
+        conn.on('error', (err) => {
+            console.error('SSH error:', err.message);
+            res.json([]);
+        });
+
+        const connectConfig = {
+            host: server.host,
+            port: server.port,
+            username: server.username,
+            readyTimeout: 10000
+        };
+
+        if (server.authType === 'password') {
+            connectConfig.password = server.password;
+        } else if (server.authType === 'key') {
+            connectConfig.privateKey = server.privateKey;
+        }
+
+        conn.connect(connectConfig);
+    }
+});
+
+// Create tmux session on a server
+app.post('/api/servers/:id/sessions', (req, res) => {
+    const { id } = req.params;
+    const { sessionName, command } = req.body;
+
+    const servers = getServers();
+    const server = servers.find(s => s.id === id);
+
+    if (!server) {
+        return res.status(404).json({ error: 'Server not found' });
+    }
+
+    const name = sessionName || `claude-${Date.now()}`;
+
+    // Build tmux command
+    let tmuxCmd;
+    if (command && (command.includes('&&') || command.includes('||') || command.includes(';'))) {
+        const escapedCmd = command.replace(/'/g, "'\\''");
+        tmuxCmd = `tmux new-session -d -s "${name}" bash -c '${escapedCmd}; exec bash'`;
+    } else {
+        const cmd = command || 'bash';
+        tmuxCmd = `tmux new-session -d -s "${name}" "${cmd}"`;
+    }
+
+    if (server.authType === 'local') {
+        exec(tmuxCmd, (error) => {
+            if (error) {
+                res.status(500).json({ error: error.message });
+                return;
+            }
+            res.json({ success: true, session: name, serverId: id });
+        });
+    } else {
+        const conn = new Client();
+
+        conn.on('ready', () => {
+            conn.exec(tmuxCmd, (err, stream) => {
+                if (err) {
+                    conn.end();
+                    return res.status(500).json({ error: err.message });
+                }
+
+                stream.on('close', (code) => {
+                    conn.end();
+                    if (code === 0) {
+                        res.json({ success: true, session: name, serverId: id });
+                    } else {
+                        res.status(500).json({ error: 'Failed to create session' });
+                    }
+                });
+            });
+        });
+
+        conn.on('error', (err) => {
+            res.status(500).json({ error: `SSH error: ${err.message}` });
+        });
+
+        const connectConfig = {
+            host: server.host,
+            port: server.port,
+            username: server.username,
+            readyTimeout: 10000
+        };
+
+        if (server.authType === 'password') {
+            connectConfig.password = server.password;
+        } else if (server.authType === 'key') {
+            connectConfig.privateKey = server.privateKey;
+        }
+
+        conn.connect(connectConfig);
+    }
+});
+
+// Kill tmux session on a server
+app.delete('/api/servers/:id/sessions/:session', (req, res) => {
+    const { id, session } = req.params;
+
+    const servers = getServers();
+    const server = servers.find(s => s.id === id);
+
+    if (!server) {
+        return res.status(404).json({ error: 'Server not found' });
+    }
+
+    const tmuxCmd = `tmux kill-session -t "${session}"`;
+
+    if (server.authType === 'local') {
+        exec(tmuxCmd, (error) => {
+            if (error) {
+                res.status(500).json({ error: error.message });
+                return;
+            }
+            res.json({ success: true });
+        });
+    } else {
+        const conn = new Client();
+
+        conn.on('ready', () => {
+            conn.exec(tmuxCmd, (err, stream) => {
+                if (err) {
+                    conn.end();
+                    return res.status(500).json({ error: err.message });
+                }
+
+                stream.on('close', () => {
+                    conn.end();
+                    res.json({ success: true });
+                });
+            });
+        });
+
+        conn.on('error', (err) => {
+            res.status(500).json({ error: `SSH error: ${err.message}` });
+        });
+
+        const connectConfig = {
+            host: server.host,
+            port: server.port,
+            username: server.username,
+            readyTimeout: 10000
+        };
+
+        if (server.authType === 'password') {
+            connectConfig.password = server.password;
+        } else if (server.authType === 'key') {
+            connectConfig.privateKey = server.privateKey;
+        }
+
+        conn.connect(connectConfig);
+    }
+});
+
+// Get windows for a tmux session
+app.get('/api/servers/:id/sessions/:session/windows', (req, res) => {
+    const { id, session } = req.params;
+
+    const servers = getServers();
+    const server = servers.find(s => s.id === id);
+
+    if (!server) {
+        return res.status(404).json({ error: 'Server not found' });
+    }
+
+    const tmuxCmd = `tmux list-windows -t "${session}" -F "#{window_index}|#{window_name}|#{window_active}" 2>/dev/null`;
+
+    if (server.authType === 'local') {
+        exec(tmuxCmd, (error, stdout) => {
+            if (error) {
+                res.json([]);
+                return;
+            }
+
+            const windows = stdout.trim().split('\n').filter(line => line).map(line => {
+                const [index, name, active] = line.split('|');
+                return {
+                    index: parseInt(index),
+                    name,
+                    active: active === '1'
+                };
+            });
+
+            res.json(windows);
+        });
+    } else {
+        const conn = new Client();
+
+        conn.on('ready', () => {
+            conn.exec(tmuxCmd, (err, stream) => {
+                if (err) {
+                    conn.end();
+                    return res.json([]);
+                }
+
+                let output = '';
+                stream.on('data', (data) => { output += data.toString(); });
+                stream.on('close', () => {
+                    conn.end();
+                    const windows = output.trim().split('\n').filter(line => line).map(line => {
+                        const [index, name, active] = line.split('|');
+                        return {
+                            index: parseInt(index),
+                            name,
+                            active: active === '1'
+                        };
+                    });
+                    res.json(windows);
+                });
+            });
+        });
+
+        conn.on('error', () => {
+            res.json([]);
+        });
+
+        const connectConfig = {
+            host: server.host,
+            port: server.port,
+            username: server.username,
+            readyTimeout: 10000
+        };
+
+        if (server.authType === 'password') {
+            connectConfig.password = server.password;
+        } else if (server.authType === 'key') {
+            connectConfig.privateKey = server.privateKey;
+        }
+
+        conn.connect(connectConfig);
+    }
+});
+
+// Kill a specific window in a tmux session
+app.delete('/api/servers/:id/sessions/:session/windows/:windowIndex', (req, res) => {
+    const { id, session, windowIndex } = req.params;
+
+    const servers = getServers();
+    const server = servers.find(s => s.id === id);
+
+    if (!server) {
+        return res.status(404).json({ error: 'Server not found' });
+    }
+
+    const tmuxCmd = `tmux kill-window -t "${session}:${windowIndex}"`;
+
+    if (server.authType === 'local') {
+        exec(tmuxCmd, (error) => {
+            if (error) {
+                res.status(500).json({ error: error.message });
+                return;
+            }
+            res.json({ success: true });
+        });
+    } else {
+        const conn = new Client();
+
+        conn.on('ready', () => {
+            conn.exec(tmuxCmd, (err, stream) => {
+                if (err) {
+                    conn.end();
+                    return res.status(500).json({ error: err.message });
+                }
+
+                stream.on('close', () => {
+                    conn.end();
+                    res.json({ success: true });
+                });
+            });
+        });
+
+        conn.on('error', (err) => {
+            res.status(500).json({ error: `SSH error: ${err.message}` });
+        });
+
+        const connectConfig = {
+            host: server.host,
+            port: server.port,
+            username: server.username,
+            readyTimeout: 10000
+        };
+
+        if (server.authType === 'password') {
+            connectConfig.password = server.password;
+        } else if (server.authType === 'key') {
+            connectConfig.privateKey = server.privateKey;
+        }
+
+        conn.connect(connectConfig);
+    }
+});
+
+// Legacy tmux endpoints (for backward compatibility)
 app.get('/api/tmux/sessions', (req, res) => {
     exec('tmux list-sessions -F "#{session_name}|#{session_windows}|#{session_created}|#{session_attached}" 2>/dev/null', (error, stdout) => {
         if (error) {
@@ -192,7 +795,8 @@ app.get('/api/tmux/sessions', (req, res) => {
                 windows: parseInt(windows) || 0,
                 created: parseInt(created) || 0,
                 attached: attached === '1',
-                createdDate: new Date(parseInt(created) * 1000).toISOString()
+                createdDate: new Date(parseInt(created) * 1000).toISOString(),
+                serverId: 'local'
             };
         });
 
@@ -204,10 +808,8 @@ app.post('/api/tmux/create', (req, res) => {
     const { sessionName, command } = req.body;
     const name = sessionName || `claude-${Date.now()}`;
 
-    // If command contains shell operators, wrap in bash -c
     let tmuxCmd;
     if (command && (command.includes('&&') || command.includes('||') || command.includes(';'))) {
-        // Escape single quotes in command and wrap with bash -c
         const escapedCmd = command.replace(/'/g, "'\\''");
         tmuxCmd = `tmux new-session -d -s "${name}" bash -c '${escapedCmd}; exec bash'`;
     } else {
@@ -220,7 +822,7 @@ app.post('/api/tmux/create', (req, res) => {
             res.status(500).json({ error: error.message });
             return;
         }
-        res.json({ success: true, session: name });
+        res.json({ success: true, session: name, serverId: 'local' });
     });
 });
 
@@ -264,76 +866,185 @@ function socketAuthMiddleware(socket, next) {
 
 io.use(socketAuthMiddleware);
 
-// Store active PTY sessions
-const ptySessions = new Map();
+// Store active connections
+const ptySessions = new Map(); // Local PTY sessions
+const sshConnections = new Map(); // Remote SSH connections
 
 io.on('connection', (socket) => {
     console.log(`Client connected (user: ${socket.username})`);
 
+    // Attach to tmux session (works for both local and remote)
     socket.on('tmux_attach', (data) => {
-        const { session, cols, rows } = data;
+        const { session, serverId, cols, rows } = data;
 
-        try {
-            exec(`tmux has-session -t "${session}" 2>/dev/null`, (error) => {
-                if (error) {
-                    socket.emit('terminal_error', { message: `Tmux session "${session}" not found` });
-                    return;
-                }
+        const servers = getServers();
+        const server = servers.find(s => s.id === serverId);
 
-                const term = pty.spawn('tmux', ['attach-session', '-t', session], {
-                    name: 'xterm-256color',
-                    cols: cols || 80,
-                    rows: rows || 24,
-                    cwd: process.env.HOME || '/root',
-                    env: process.env
-                });
+        if (!server) {
+            socket.emit('terminal_error', { message: 'Server not found' });
+            return;
+        }
 
-                ptySessions.set(socket.id, term);
+        // Cleanup any existing connection for this socket
+        cleanupSocketConnection(socket.id);
 
-                term.onData((data) => {
-                    socket.emit('terminal_output', { data });
-                });
-
-                term.onExit(({ exitCode, signal }) => {
-                    console.log(`Terminal exited: ${exitCode}, signal: ${signal}`);
-                    ptySessions.delete(socket.id);
-                    socket.emit('terminal_error', { message: 'Terminal session ended' });
-                });
-
-                console.log(`Attached to tmux session: ${session}`);
-            });
-        } catch (error) {
-            console.error('Error attaching to tmux:', error);
-            socket.emit('terminal_error', { message: error.message });
+        if (server.authType === 'local') {
+            // Local tmux attachment
+            attachLocalTmux(socket, session, cols, rows);
+        } else {
+            // Remote SSH tmux attachment
+            attachRemoteTmux(socket, server, session, cols, rows);
         }
     });
 
     socket.on('terminal_input', (data) => {
-        const term = ptySessions.get(socket.id);
-        if (term) {
-            term.write(data.data);
+        // Check for local PTY session first
+        const ptySession = ptySessions.get(socket.id);
+        if (ptySession) {
+            ptySession.write(data.data);
+            return;
+        }
+
+        // Check for SSH connection
+        const sshSession = sshConnections.get(socket.id);
+        if (sshSession && sshSession.stream) {
+            sshSession.stream.write(data.data);
         }
     });
 
     socket.on('terminal_resize', (data) => {
-        const term = ptySessions.get(socket.id);
-        if (term) {
-            term.resize(data.cols, data.rows);
+        const { cols, rows } = data;
+
+        const ptySession = ptySessions.get(socket.id);
+        if (ptySession) {
+            ptySession.resize(cols, rows);
+            return;
+        }
+
+        const sshSession = sshConnections.get(socket.id);
+        if (sshSession && sshSession.stream) {
+            sshSession.stream.setWindow(rows, cols, 0, 0);
         }
     });
 
     socket.on('disconnect', () => {
         console.log('Client disconnected');
-        const term = ptySessions.get(socket.id);
-        if (term) {
-            term.kill();
-            ptySessions.delete(socket.id);
-        }
+        cleanupSocketConnection(socket.id);
     });
 });
+
+// Helper function to attach to local tmux
+function attachLocalTmux(socket, session, cols, rows) {
+    exec(`tmux has-session -t "${session}" 2>/dev/null`, (error) => {
+        if (error) {
+            socket.emit('terminal_error', { message: `Tmux session "${session}" not found` });
+            return;
+        }
+
+        const term = pty.spawn('tmux', ['attach-session', '-t', session], {
+            name: 'xterm-256color',
+            cols: cols || 80,
+            rows: rows || 24,
+            cwd: process.env.HOME || '/root',
+            env: process.env
+        });
+
+        ptySessions.set(socket.id, term);
+
+        term.onData((data) => {
+            socket.emit('terminal_output', { data });
+        });
+
+        term.onExit(({ exitCode, signal }) => {
+            console.log(`Terminal exited: ${exitCode}, signal: ${signal}`);
+            ptySessions.delete(socket.id);
+            socket.emit('terminal_error', { message: 'Terminal session ended' });
+        });
+
+        console.log(`Attached to local tmux session: ${session}`);
+    });
+}
+
+// Helper function to attach to remote tmux via SSH
+function attachRemoteTmux(socket, server, session, cols, rows) {
+    const conn = new Client();
+
+    conn.on('ready', () => {
+        // Start an interactive shell with tmux attach
+        conn.shell({
+            term: 'xterm-256color',
+            cols: cols || 80,
+            rows: rows || 24
+        }, (err, stream) => {
+            if (err) {
+                conn.end();
+                socket.emit('terminal_error', { message: `Failed to start shell: ${err.message}` });
+                return;
+            }
+
+            sshConnections.set(socket.id, { conn, stream });
+
+            stream.on('data', (data) => {
+                socket.emit('terminal_output', { data: data.toString() });
+            });
+
+            stream.on('close', () => {
+                console.log(`SSH stream closed for session: ${session}`);
+                sshConnections.delete(socket.id);
+                conn.end();
+                socket.emit('terminal_error', { message: 'SSH connection closed' });
+            });
+
+            // Attach to tmux session
+            stream.write(`tmux attach-session -t "${session}"\n`);
+            console.log(`Attached to remote tmux session: ${session} on ${server.host}`);
+        });
+    });
+
+    conn.on('error', (err) => {
+        console.error('SSH connection error:', err.message);
+        socket.emit('terminal_error', { message: `SSH error: ${err.message}` });
+    });
+
+    const connectConfig = {
+        host: server.host,
+        port: server.port,
+        username: server.username,
+        readyTimeout: 10000
+    };
+
+    if (server.authType === 'password') {
+        connectConfig.password = server.password;
+    } else if (server.authType === 'key') {
+        connectConfig.privateKey = server.privateKey;
+    }
+
+    conn.connect(connectConfig);
+}
+
+// Cleanup function for socket disconnection
+function cleanupSocketConnection(socketId) {
+    const ptySession = ptySessions.get(socketId);
+    if (ptySession) {
+        ptySession.kill();
+        ptySessions.delete(socketId);
+    }
+
+    const sshSession = sshConnections.get(socketId);
+    if (sshSession) {
+        if (sshSession.stream) {
+            sshSession.stream.end();
+        }
+        if (sshSession.conn) {
+            sshSession.conn.end();
+        }
+        sshConnections.delete(socketId);
+    }
+}
 
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`Claude Terminal listening on port ${PORT}`);
     console.log(`Tmux socket path: ${TMUX_SOCKET}`);
+    console.log('Multi-server support enabled');
     console.log('Sessions persist across container restarts');
 });
