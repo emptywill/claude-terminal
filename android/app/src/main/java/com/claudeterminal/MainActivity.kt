@@ -1,10 +1,13 @@
 package com.claudeterminal
 
+import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.GestureDetector
 import android.view.Gravity
 import android.view.KeyEvent
@@ -313,8 +316,53 @@ class MainActivity : AppCompatActivity() {
         // Store reference for showing/hiding
         settingsTextBtn.tag = "settings"
 
+        // Hint overlay for double-tap
+        val hintBg = GradientDrawable().apply {
+            setColor(Color.parseColor("#CC000000"))
+            cornerRadius = 24f
+        }
+        val hintText = TextView(this).apply {
+            text = "Double-tap to exit fullscreen"
+            setTextColor(Color.WHITE)
+            textSize = 14f
+            setPadding(40, 24, 40, 24)
+            background = hintBg
+            visibility = View.GONE
+            tag = "hint"
+        }
+        container.addView(hintText, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.WRAP_CONTENT,
+            FrameLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
+            gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+            bottomMargin = 120
+        })
+
         setContentView(container)
         hideSystemUI()
+    }
+
+    private fun showHint() {
+        val container = webView?.parent as? FrameLayout ?: return
+        for (i in 0 until container.childCount) {
+            val child = container.getChildAt(i)
+            if (child.tag == "hint" && child is TextView) {
+                child.visibility = View.VISIBLE
+                child.alpha = 1f
+
+                // Fade out after 3 seconds
+                Handler(Looper.getMainLooper()).postDelayed({
+                    ObjectAnimator.ofFloat(child, "alpha", 1f, 0f).apply {
+                        duration = 500
+                        start()
+                    }
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        child.visibility = View.GONE
+                    }, 500)
+                }, 3000)
+                break
+            }
+        }
     }
 
     private fun showError(error: String) {
@@ -454,10 +502,9 @@ class MainActivity : AppCompatActivity() {
         isFullscreen = !isFullscreen
         if (isFullscreen) {
             hideSystemUI()
-            Toast.makeText(this, "Fullscreen ON (double-tap to exit)", Toast.LENGTH_SHORT).show()
+            showHint()
         } else {
             showSystemUI()
-            Toast.makeText(this, "Fullscreen OFF (double-tap to enter)", Toast.LENGTH_SHORT).show()
         }
     }
 
