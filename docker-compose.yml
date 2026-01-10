@@ -1,0 +1,17 @@
+services:
+  claude-terminal:
+    build: .
+    # Or use pre-built image:
+    # image: ghcr.io/emptywill/claude-terminal:latest
+    container_name: claude-terminal
+    environment:
+      - PORT=3000
+      - SESSION_SECRET=change-this-to-a-random-string
+      - DEFAULT_USER=admin
+      - DEFAULT_PASS=admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - /tmp/tmux-0:/tmp/tmux-0  # Host tmux socket (root user)
+      - ./data:/app/data         # Persist user credentials
+    restart: unless-stopped

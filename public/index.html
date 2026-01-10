@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Claude Terminal</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>⚡</text></svg>">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <span class="app-title">Claude Terminal</span>
+            </div>
+            <div class="header-right">
+                <span class="user-name" id="userName"></span>
+                <button class="btn btn-sm" onclick="logout()">Logout</button>
+            </div>
+        </header>
+
+        <!-- Main Layout -->
+        <div class="claude-code-layout">
+            <!-- Session Manager (Left Sidebar) -->
+            <aside class="session-manager">
+                <div class="session-manager-header">
+                    <h3>Tmux Sessions</h3>
+                    <button class="btn-icon" id="refreshSessions" title="Refresh Sessions">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 4v6h-6M1 20v-6h6"/>
+                            <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="session-manager-content">
+                    <div class="session-list" id="sessionList">
+                        <!-- Sessions loaded dynamically -->
+                    </div>
+                    <div class="session-manager-footer">
+                        <button class="btn btn-primary btn-full" id="createSession">
+                            + New Session
+                        </button>
+                    </div>
+                </div>
+                <button class="sidebar-collapse-toggle" id="toggleSessions" title="Toggle Sessions">◀</button>
+            </aside>
+
+            <!-- Terminal Area -->
+            <main class="claude-terminal-main">
+                <!-- Session Info Bar -->
+                <div class="session-info-bar">
+                    <div class="session-info-left">
+                        <span class="session-badge">
+                            <span class="session-icon">⚡</span>
+                            <span id="currentSessionName">No session selected</span>
+                        </span>
+                        <span class="session-detail" id="sessionDetail"></span>
+                    </div>
+                    <div class="session-info-right">
+                        <button class="btn-icon-small" id="btnFullscreen" title="Toggle Fullscreen">
+                            ⛶
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tmux Controls -->
+                <div class="tmux-pane-controls">
+                    <div class="btn-group">
+                        <button class="tmux-pane-btn btn-warning" id="btnEsc" title="Send ESC (Stop Claude)">
+                            <span>ESC</span>
+                        </button>
+                        <button class="tmux-pane-btn" id="btnKeyboard" title="Toggle Keyboard">
+                            <span>⌨️</span>
+                        </button>
+                        <button class="tmux-pane-btn" id="btnTmuxScroll" title="Toggle Scroll Mode">
+                            <span>📜</span>
+                        </button>
+                        <button class="tmux-pane-btn" id="btnTmuxCopy" title="Copy Selected Text">
+                            <span>📋</span>
+                        </button>
+                        <button class="tmux-pane-btn" id="btnPaste" title="Paste from Clipboard">
+                            <span>📥</span>
+                        </button>
+                        <button class="tmux-pane-btn" id="btnZoomOut" title="Decrease Font Size">
+                            <span>A-</span>
+                        </button>
+                        <button class="tmux-pane-btn" id="btnZoomIn" title="Increase Font Size">
+                            <span>A+</span>
+                        </button>
+                        <button class="tmux-pane-btn" id="btnNewWindow" title="Create New Window">
+                            <span>+ Win</span>
+                        </button>
+                        <button class="tmux-pane-btn" id="btnNextWindow" title="Next Window">
+                            <span>Next</span>
+                        </button>
+                        <button class="tmux-pane-btn btn-danger" id="btnEndSession" title="End Current Session">
+                            <span>End</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Terminal -->
+                <div class="claude-terminal-container" id="claudeTerminalContainer">
+                    <div class="scroll-overlay" id="scrollOverlay">
+                        <button class="scroll-overlay-btn" id="btnScrollUp" title="Scroll Up">▲</button>
+                        <button class="scroll-overlay-btn" id="btnScrollDown" title="Scroll Down">▼</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
