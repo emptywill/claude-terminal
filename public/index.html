@@ -39,18 +39,47 @@
         <div class="claude-code-layout">
             <!-- Session Manager Sidebar -->
             <aside class="session-manager">
-                <div class="session-manager-header">
-                    <h3>Sessions</h3>
+                <!-- Tabs (Desktop only) -->
+                <div class="sidebar-tabs">
+                    <button class="sidebar-tab active" data-tab="sessions">Sessions</button>
+                    <button class="sidebar-tab" data-tab="skills">Skills</button>
+                    <button class="sidebar-tab" data-tab="files">Files</button>
                 </div>
 
-                <div class="session-manager-content">
-                    <div class="session-list" id="sessionList">
-                        <!-- Sessions loaded dynamically -->
+                <!-- Sessions View -->
+                <div class="sidebar-view active" id="sessionsView">
+                    <div class="session-manager-content">
+                        <div class="session-list" id="sessionList">
+                            <!-- Sessions loaded dynamically -->
+                        </div>
+                    </div>
+                    <div class="session-manager-footer">
+                        <button class="btn btn-primary btn-full" id="createSession">+ New Session</button>
                     </div>
                 </div>
 
-                <div class="session-manager-footer">
-                    <button class="btn btn-primary btn-full" id="createSession">+ New Session</button>
+                <!-- Skills View -->
+                <div class="sidebar-view" id="skillsView">
+                    <div class="session-manager-content">
+                        <div class="skills-list" id="skillsList">
+                            <!-- Skills loaded dynamically -->
+                        </div>
+                    </div>
+                    <div class="session-manager-footer">
+                        <button class="btn btn-sm btn-full" id="refreshSkills">🔄 Refresh</button>
+                    </div>
+                </div>
+
+                <!-- Files View -->
+                <div class="sidebar-view" id="filesView">
+                    <div class="session-manager-content">
+                        <div class="files-tree" id="filesTree">
+                            <!-- File tree loaded dynamically -->
+                        </div>
+                    </div>
+                    <div class="session-manager-footer">
+                        <button class="btn btn-sm btn-full" id="refreshFiles">🔄 Refresh</button>
+                    </div>
                 </div>
 
                 <button class="sidebar-collapse-toggle" id="toggleSessions">◀</button>
