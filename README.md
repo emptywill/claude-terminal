@@ -1,14 +1,20 @@
 # Claude Terminal
 
-A lightweight, mobile-friendly web interface for managing tmux sessions. Built specifically for running Claude Code CLI on remote servers.
+**A multi-server SSH tmux session manager optimized for Claude Code CLI.**
+
+Manage persistent terminal sessions across multiple servers from one web dashboard. Run Claude Code on your VPS from your phone, access locked-down servers through your homelab, and keep sessions alive 24/7.
 
 ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)
 ![Node.js](https://img.shields.io/badge/node.js-18-green.svg?style=flat&logo=node.js&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
+## What It Does
+
+**TL;DR:** Web UI for tmux that works across multiple servers via SSH. Built for Claude Code but works with any terminal application.
+
 ## How It Works
 
-Claude Terminal is a web-based dashboard for managing tmux sessions. It supports two modes:
+Claude Terminal provides a web-based dashboard for managing tmux sessions. It supports two modes:
 
 ### Local Mode
 Run the container directly on a server to manage tmux sessions on that machine:
@@ -47,11 +53,13 @@ This gives you a single dashboard to manage Claude sessions across all your serv
 
 ## Features
 
-- **Web-based tmux management** - Create, attach, and kill tmux sessions from your browser
-- **Multi-server support** - Manage sessions on local and remote servers via SSH
-- **Mobile-friendly** - Touch controls for ESC, scroll, copy/paste, and zoom
-- **Session-based auth** - Secure login with bcrypt password hashing
-- **Real-time terminal** - Full terminal emulation via xterm.js and Socket.IO
+- **Multi-server SSH management** - Single dashboard for local tmux + multiple remote servers via SSH
+- **Persistent sessions** - tmux keeps sessions alive 24/7, reconnect anytime from anywhere
+- **Claude Code optimized** - Auto-start Claude, custom paths per server, mobile-friendly controls
+- **Mobile-ready** - Touch controls for ESC (stop Claude thinking), scroll, copy/paste, zoom
+- **Toast notifications** - All feedback via themed notifications (success, error, warning, info)
+- **Instant operations** - Session deletion <200ms, real-time terminal via Socket.IO
+- **Secure** - Session-based auth with bcrypt, SSH key support, file-based persistence
 - **Lightweight** - Minimal Docker image with only essential dependencies
 
 ## Quick Start
