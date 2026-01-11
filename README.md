@@ -6,9 +6,49 @@ A lightweight, mobile-friendly web interface for managing tmux sessions. Built s
 ![Node.js](https://img.shields.io/badge/node.js-18-green.svg?style=flat&logo=node.js&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
+## How It Works
+
+Claude Terminal is a web-based dashboard for managing tmux sessions. It supports two modes:
+
+### Local Mode
+Run the container directly on a server to manage tmux sessions on that machine:
+
+```
+Browser ──(3000)──► Claude Terminal ──► Local tmux socket
+```
+
+### Multi-Server Mode
+Run the container on one machine (e.g., homelab) and manage tmux sessions on multiple remote servers via SSH:
+
+```
+Browser ──(3000)──► Claude Terminal ──(SSH:22)──► Remote Server 1
+                                    ──(SSH:22)──► Remote Server 2
+                                    ──(SSH:22)──► VPS
+```
+
+### Why Multi-Server Mode?
+
+This is particularly useful when your remote servers have strict firewall rules. For example:
+
+**Scenario:** You have a VPS that only allows SSH (port 22) from your home IP for security. You want to run Claude Code on the VPS from work or a hotel.
+
+**Solution:**
+1. Run Claude Terminal on your homelab (which has your home IP)
+2. Add the VPS as a remote server in Claude Terminal
+3. Access your homelab's Claude Terminal from anywhere (via VPN, Tailscale, etc.)
+4. Your homelab SSHs into the VPS on your behalf
+
+```
+Work/Hotel ──(VPN)──► Homelab:3000 ──(SSH)──► VPS:22
+   (you)            (claude-terminal)     (only allows home IP)
+```
+
+This gives you a single dashboard to manage Claude sessions across all your servers, with your homelab acting as a secure gateway.
+
 ## Features
 
 - **Web-based tmux management** - Create, attach, and kill tmux sessions from your browser
+- **Multi-server support** - Manage sessions on local and remote servers via SSH
 - **Mobile-friendly** - Touch controls for ESC, scroll, copy/paste, and zoom
 - **Session-based auth** - Secure login with bcrypt password hashing
 - **Real-time terminal** - Full terminal emulation via xterm.js and Socket.IO

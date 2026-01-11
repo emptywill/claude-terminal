@@ -177,12 +177,12 @@
         if (!list) return;
 
         if (!sessions || sessions.length === 0) {
-            list.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-secondary); font-size: 0.875rem;">No sessions. Create one to get started.</div>';
+            list.innerHTML = '<div class="empty-state" style="padding: 1.5rem; text-align: center; color: var(--text-secondary); font-size: 0.875rem;">No sessions. Create one to get started.</div>';
             return;
         }
 
-        list.innerHTML = sessions.map(s => `
-            <div class="session-item ${s.name === currentSession && s.serverId === currentServerId ? 'active' : ''}" data-session="${s.name}" data-server="${s.serverId}">
+        list.innerHTML = sessions.map((s, i) => `
+            <div class="session-item stagger-item ${s.name === currentSession && s.serverId === currentServerId ? 'active' : ''}" data-session="${s.name}" data-server="${s.serverId}" style="animation-delay: ${i * 0.05}s">
                 <div class="session-item-header">
                     <span class="session-name">${s.name}</span>
                     <div class="session-item-right">
@@ -307,10 +307,13 @@
             }
         }, 500);
 
-        // Show welcome message
+        // Show welcome message with refined styling
         const location = isMobile ? 'above' : 'on the left';
         term.writeln('');
-        term.writeln('  \x1b[1;33m⚡ CLAUDE TERMINAL\x1b[0m');
+        term.writeln('  \x1b[38;5;208m┌─────────────────────────────────────┐\x1b[0m');
+        term.writeln('  \x1b[38;5;208m│\x1b[0m  \x1b[1;38;5;214m⚡ CLAUDE TERMINAL\x1b[0m                  \x1b[38;5;208m│\x1b[0m');
+        term.writeln('  \x1b[38;5;208m│\x1b[0m  \x1b[38;5;244mCommand Center v2.0\x1b[0m                \x1b[38;5;208m│\x1b[0m');
+        term.writeln('  \x1b[38;5;208m└─────────────────────────────────────┘\x1b[0m');
         term.writeln('');
         term.writeln(`  \x1b[90mSelect a session ${location} or create a new one\x1b[0m`);
         term.writeln('');
@@ -483,20 +486,10 @@
             openChangePasswordModal();
         });
 
-        // Add new server button in modal
-        document.getElementById('addNewServerBtn')?.addEventListener('click', showInlineServerForm);
-
-        // Inline server auth type change
-        document.getElementById('inlineServerAuthType')?.addEventListener('change', (e) => {
-            const passwordGroup = document.getElementById('inlinePasswordGroup');
-            const keyGroup = document.getElementById('inlineKeyGroup');
-            if (e.target.value === 'password') {
-                passwordGroup?.classList.remove('hidden');
-                keyGroup?.classList.add('hidden');
-            } else {
-                passwordGroup?.classList.add('hidden');
-                keyGroup?.classList.remove('hidden');
-            }
+        // Add new server button in modal - opens the full server modal
+        document.getElementById('addNewServerBtn')?.addEventListener('click', () => {
+            closeNewSessionModal();
+            openEditServerModal(null, true); // true = return to new session modal after save
         });
 
         // Edit server auth type change
@@ -516,6 +509,11 @@
         document.getElementById('addServerModalBtn')?.addEventListener('click', () => {
             closeServersModal();
             openEditServerModal();
+        });
+
+        // Update working directory when server selection changes
+        document.getElementById('sessionServer')?.addEventListener('change', () => {
+            updateSessionDirFromServer();
         });
     }
 
@@ -550,7 +548,7 @@
             }
 
             tabsContainer.innerHTML = windows.map((w, i) => `
-                <button class="window-tab ${w.active ? 'active' : ''}" data-index="${w.index}" title="Window ${i + 1} (${w.name})">
+                <button class="window-tab stagger-item ${w.active ? 'active' : ''}" data-index="${w.index}" title="Window ${i + 1} (${w.name})" style="animation-delay: ${i * 0.05}s">
                     <span class="window-tab-name">Win ${i + 1}</span>
                     <span class="window-tab-close" data-index="${w.index}" title="Close window">&times;</span>
                 </button>
@@ -705,18 +703,27 @@
         if (modal) {
             modal.classList.remove('hidden');
             document.getElementById('newSessionName').value = `claude-${Date.now()}`;
-            document.getElementById('newSessionDir').value = '/srv/containers';
             document.getElementById('startClaudeCode').checked = true;
             updateServerDropdowns();
-            hideInlineServerForm();
+
+            // Set working directory based on selected server's default path
+            updateSessionDirFromServer();
         }
     };
+
+    function updateSessionDirFromServer() {
+        const serverSelect = document.getElementById('sessionServer');
+        const dirInput = document.getElementById('newSessionDir');
+        if (serverSelect && dirInput) {
+            const server = servers.find(s => s.id === serverSelect.value);
+            dirInput.value = server?.defaultPath || '/root';
+        }
+    }
 
     window.closeNewSessionModal = function() {
         const modal = document.getElementById('newSessionModal');
         if (modal) {
             modal.classList.add('hidden');
-            hideInlineServerForm();
         }
     };
 
@@ -768,82 +775,6 @@
         } catch (error) {
             console.error('Failed to create session:', error);
             alert('Failed to create session: ' + error.message);
-        }
-    };
-
-    // ===== INLINE SERVER FORM =====
-
-    function showInlineServerForm() {
-        const form = document.getElementById('inlineServerForm');
-        if (form) {
-            form.classList.remove('hidden');
-            document.getElementById('inlineServerName').value = '';
-            document.getElementById('inlineServerHost').value = '';
-            document.getElementById('inlineServerPort').value = '22';
-            document.getElementById('inlineServerUser').value = 'root';
-            document.getElementById('inlineServerAuthType').value = 'password';
-            document.getElementById('inlineServerPassword').value = '';
-            document.getElementById('inlineServerKey').value = '';
-            document.getElementById('inlinePasswordGroup').classList.remove('hidden');
-            document.getElementById('inlineKeyGroup').classList.add('hidden');
-        }
-    }
-
-    function hideInlineServerForm() {
-        const form = document.getElementById('inlineServerForm');
-        if (form) {
-            form.classList.add('hidden');
-        }
-    }
-
-    window.cancelInlineServer = hideInlineServerForm;
-
-    window.saveInlineServer = async function() {
-        const name = document.getElementById('inlineServerName').value.trim();
-        const host = document.getElementById('inlineServerHost').value.trim();
-        const port = parseInt(document.getElementById('inlineServerPort').value) || 22;
-        const username = document.getElementById('inlineServerUser').value.trim();
-        const authType = document.getElementById('inlineServerAuthType').value;
-        const password = document.getElementById('inlineServerPassword').value;
-        const privateKey = document.getElementById('inlineServerKey').value;
-
-        if (!name || !host || !username) {
-            alert('Please fill in name, host, and username');
-            return;
-        }
-
-        if (authType === 'password' && !password) {
-            alert('Please enter a password');
-            return;
-        }
-
-        if (authType === 'key' && !privateKey) {
-            alert('Please enter a private key');
-            return;
-        }
-
-        try {
-            const response = await fetch('/api/servers', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, host, port, username, authType, password, privateKey })
-            });
-
-            if (response.ok) {
-                await loadServers();
-                hideInlineServerForm();
-                // Select the new server
-                const serverSelect = document.getElementById('sessionServer');
-                if (serverSelect) {
-                    serverSelect.value = servers[servers.length - 1]?.id || '';
-                }
-            } else {
-                const error = await response.json();
-                alert('Failed to add server: ' + (error.error || 'Unknown error'));
-            }
-        } catch (error) {
-            console.error('Failed to add server:', error);
-            alert('Failed to add server: ' + error.message);
         }
     };
 
@@ -1029,7 +960,10 @@
 
     // ===== EDIT SERVER MODAL =====
 
-    window.openEditServerModal = function(server = null) {
+    let returnToNewSessionModal = false;
+
+    window.openEditServerModal = function(server = null, returnToSession = false) {
+        returnToNewSessionModal = returnToSession;
         const modal = document.getElementById('editServerModal');
         const title = document.getElementById('editServerTitle');
 
@@ -1046,6 +980,7 @@
                 document.getElementById('editServerAuthType').value = server.authType;
                 document.getElementById('editServerPassword').value = '';
                 document.getElementById('editServerKey').value = '';
+                document.getElementById('editServerPath').value = server.defaultPath || '/root';
 
                 // Disable host/port/user for local server
                 const isLocal = server.authType === 'local';
@@ -1063,6 +998,7 @@
                 document.getElementById('editServerAuthType').value = 'password';
                 document.getElementById('editServerPassword').value = '';
                 document.getElementById('editServerKey').value = '';
+                document.getElementById('editServerPath').value = '/root';
 
                 document.getElementById('editServerHost').disabled = false;
                 document.getElementById('editServerPort').disabled = false;
@@ -1086,6 +1022,11 @@
         const modal = document.getElementById('editServerModal');
         if (modal) {
             modal.classList.add('hidden');
+        }
+        // If we came from New Session modal, go back there
+        if (returnToNewSessionModal) {
+            returnToNewSessionModal = false;
+            openNewSessionModal();
         }
     };
 
@@ -1137,6 +1078,7 @@
         const authType = document.getElementById('editServerAuthType').value;
         const password = document.getElementById('editServerPassword').value;
         const privateKey = document.getElementById('editServerKey').value;
+        const defaultPath = document.getElementById('editServerPath').value.trim() || '/root';
 
         if (!name) {
             alert('Please enter a server name');
@@ -1164,20 +1106,41 @@
                 response = await fetch(`/api/servers/${serverId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, host, port, username, authType, password, privateKey })
+                    body: JSON.stringify({ name, host, port, username, authType, password, privateKey, defaultPath })
                 });
             } else {
                 response = await fetch('/api/servers', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, host, port, username, authType, password, privateKey })
+                    body: JSON.stringify({ name, host, port, username, authType, password, privateKey, defaultPath })
                 });
             }
 
             if (response.ok) {
+                const wasNewServer = !serverId;
+                const shouldReturnToNewSession = returnToNewSessionModal && wasNewServer;
+                returnToNewSessionModal = false; // Clear before closing modal
+
                 await loadServers();
-                closeEditServerModal();
-                openServersModal();
+
+                // Close modal without triggering return logic
+                const modal = document.getElementById('editServerModal');
+                if (modal) modal.classList.add('hidden');
+
+                // If we came from the New Session modal, go back there with new server selected
+                if (shouldReturnToNewSession) {
+                    openNewSessionModal();
+                    // Select the newly added server
+                    setTimeout(() => {
+                        const serverSelect = document.getElementById('sessionServer');
+                        if (serverSelect && servers.length > 0) {
+                            serverSelect.value = servers[servers.length - 1].id;
+                            updateSessionDirFromServer();
+                        }
+                    }, 100);
+                } else {
+                    openServersModal();
+                }
             } else {
                 const error = await response.json();
                 alert('Failed to save server: ' + (error.error || 'Unknown error'));

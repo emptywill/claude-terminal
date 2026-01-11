@@ -232,6 +232,7 @@ app.get('/api/servers', (req, res) => {
         username: s.username,
         authType: s.authType,
         isDefault: s.isDefault,
+        defaultPath: s.defaultPath || '/root',
         createdAt: s.createdAt
     }));
     res.json(safeServers);
@@ -239,7 +240,7 @@ app.get('/api/servers', (req, res) => {
 
 // Add new server
 app.post('/api/servers', (req, res) => {
-    const { name, host, port, username, authType, password, privateKey } = req.body;
+    const { name, host, port, username, authType, password, privateKey, defaultPath } = req.body;
 
     if (!name || !host || !username) {
         return res.status(400).json({ error: 'Name, host, and username are required' });
@@ -263,6 +264,7 @@ app.post('/api/servers', (req, res) => {
         authType: authType || 'password',
         password: authType === 'password' ? password : undefined,
         privateKey: authType === 'key' ? privateKey : undefined,
+        defaultPath: defaultPath || '/root',
         isDefault: false,
         createdAt: new Date().toISOString()
     };
@@ -279,6 +281,7 @@ app.post('/api/servers', (req, res) => {
             port: newServer.port,
             username: newServer.username,
             authType: newServer.authType,
+            defaultPath: newServer.defaultPath,
             isDefault: newServer.isDefault
         }
     });
@@ -287,7 +290,7 @@ app.post('/api/servers', (req, res) => {
 // Update server
 app.put('/api/servers/:id', (req, res) => {
     const { id } = req.params;
-    const { name, host, port, username, authType, password, privateKey } = req.body;
+    const { name, host, port, username, authType, password, privateKey, defaultPath } = req.body;
 
     const servers = getServers();
     const serverIndex = servers.findIndex(s => s.id === id);
@@ -299,6 +302,7 @@ app.put('/api/servers/:id', (req, res) => {
     // Don't allow editing the local server's connection settings
     if (servers[serverIndex].authType === 'local') {
         servers[serverIndex].name = name || servers[serverIndex].name;
+        servers[serverIndex].defaultPath = defaultPath || servers[serverIndex].defaultPath || '/srv/containers';
     } else {
         servers[serverIndex] = {
             ...servers[serverIndex],
@@ -309,6 +313,7 @@ app.put('/api/servers/:id', (req, res) => {
             authType: authType || servers[serverIndex].authType,
             password: authType === 'password' ? (password || servers[serverIndex].password) : undefined,
             privateKey: authType === 'key' ? (privateKey || servers[serverIndex].privateKey) : undefined,
+            defaultPath: defaultPath || servers[serverIndex].defaultPath || '/root',
             updatedAt: new Date().toISOString()
         };
     }
