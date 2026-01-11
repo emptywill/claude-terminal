@@ -10,6 +10,56 @@
     let currentFontSize = 14;
     let isScrollMode = false;
 
+    // Toast notification system
+    function showToast(message, type = 'info', duration = 4000) {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+
+        const icons = {
+            success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+            error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+            warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+            info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+        };
+
+        const titles = {
+            success: 'Success',
+            error: 'Error',
+            warning: 'Warning',
+            info: 'Info'
+        };
+
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `
+            <div class="toast-icon">${icons[type] || icons.info}</div>
+            <div class="toast-content">
+                <div class="toast-title">${titles[type] || 'Notice'}</div>
+                <div class="toast-message">${message}</div>
+            </div>
+            <button class="toast-close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        `;
+
+        container.appendChild(toast);
+
+        const closeToast = () => {
+            toast.classList.add('toast-leaving');
+            setTimeout(() => toast.remove(), 200);
+        };
+
+        toast.querySelector('.toast-close').addEventListener('click', closeToast);
+
+        if (duration > 0) {
+            setTimeout(closeToast, duration);
+        }
+
+        return toast;
+    }
+
     // Custom confirmation dialog
     function showConfirm(options) {
         return new Promise((resolve) => {
@@ -135,7 +185,7 @@
             if (currentSession && currentServerId) {
                 const server = servers.find(s => s.id === currentServerId);
                 if (server) {
-                    infoEl.textContent = server.authType === 'local' ? 'Local' : server.host;
+                    infoEl.textContent = server.authType === 'local' ? 'Local' : server.name;
                 }
             } else {
                 infoEl.textContent = '';
@@ -181,18 +231,21 @@
             return;
         }
 
-        list.innerHTML = sessions.map((s, i) => `
-            <div class="session-item stagger-item ${s.name === currentSession && s.serverId === currentServerId ? 'active' : ''}" data-session="${s.name}" data-server="${s.serverId}" style="animation-delay: ${i * 0.05}s">
+        list.innerHTML = sessions.map((s, i) => {
+            const isActive = s.name === currentSession && s.serverId === currentServerId;
+            return `
+            <div class="session-item stagger-item ${isActive ? 'active' : ''}" data-session="${s.name}" data-server="${s.serverId}" style="animation-delay: ${i * 0.05}s">
                 <div class="session-item-header">
                     <span class="session-name">${s.name}</span>
                     <div class="session-item-right">
-                        <span class="session-status" style="background: ${s.attached ? 'var(--accent-primary)' : 'var(--success)'}"></span>
+                        <span class="session-status" style="background: ${isActive ? 'var(--success)' : 'var(--accent-primary)'}"></span>
                         <span class="session-close" data-session="${s.name}" data-server="${s.serverId}" title="End session">&times;</span>
                     </div>
                 </div>
                 <div class="session-meta">${s.serverType === 'local' ? '● Local' : '○ ' + s.serverName} · ${s.windows} win</div>
             </div>
-        `).join('');
+        `;
+        }).join('');
 
         // Click handlers for session items
         list.querySelectorAll('.session-item').forEach(item => {
@@ -211,6 +264,7 @@
                 e.stopPropagation();
                 const sessionName = closeBtn.dataset.session;
                 const serverId = closeBtn.dataset.server;
+                const sessionElement = closeBtn.closest('.session-item');
                 const confirmed = await showConfirm({
                     title: 'End Session',
                     message: `Are you sure you want to end "${sessionName}"? This will terminate all processes in this session.`,
@@ -219,7 +273,7 @@
                     danger: true
                 });
                 if (confirmed) {
-                    killSessionOnServer(sessionName, serverId);
+                    killSessionOnServer(sessionName, serverId, sessionElement);
                 }
             });
         });
@@ -307,13 +361,10 @@
             }
         }, 500);
 
-        // Show welcome message with refined styling
+        // Show welcome message
         const location = isMobile ? 'above' : 'on the left';
         term.writeln('');
-        term.writeln('  \x1b[38;5;208m┌─────────────────────────────────────┐\x1b[0m');
-        term.writeln('  \x1b[38;5;208m│\x1b[0m  \x1b[1;38;5;214m⚡ CLAUDE TERMINAL\x1b[0m                  \x1b[38;5;208m│\x1b[0m');
-        term.writeln('  \x1b[38;5;208m│\x1b[0m  \x1b[38;5;244mCommand Center v2.0\x1b[0m                \x1b[38;5;208m│\x1b[0m');
-        term.writeln('  \x1b[38;5;208m└─────────────────────────────────────┘\x1b[0m');
+        term.writeln('  \x1b[1;38;5;214m⚡ CLAUDE TERMINAL\x1b[0m');
         term.writeln('');
         term.writeln(`  \x1b[90mSelect a session ${location} or create a new one\x1b[0m`);
         term.writeln('');
@@ -515,6 +566,11 @@
         document.getElementById('sessionServer')?.addEventListener('change', () => {
             updateSessionDirFromServer();
         });
+
+        // Regenerate session name button
+        document.getElementById('regenerateNameBtn')?.addEventListener('click', () => {
+            document.getElementById('newSessionName').value = generateSessionName();
+        });
     }
 
     // Send tmux command (Ctrl+B prefix)
@@ -673,27 +729,63 @@
         await killSessionOnServer(name, currentServerId);
     }
 
-    async function killSessionOnServer(name, serverId) {
+    async function killSessionOnServer(name, serverId, sessionElement = null) {
         if (!serverId) return;
 
+        const isCurrentSession = currentSession === name && currentServerId === serverId;
+
+        // FIRST: If this is current session, disconnect socket immediately to stop receiving data
+        if (isCurrentSession) {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+            }
+            // Clear terminal and show ending message immediately
+            if (term) {
+                term.clear();
+                term.writeln('');
+                term.writeln('  \x1b[1;38;5;214m⚡ CLAUDE TERMINAL\x1b[0m');
+                term.writeln('  \x1b[38;5;245mEnding session...\x1b[0m');
+            }
+            currentSession = null;
+            document.getElementById('currentSessionName').textContent = 'No session selected';
+            document.getElementById('windowTabs').innerHTML = '';
+            updateServerInfo();
+        }
+
+        // Fade out session element
+        if (sessionElement) {
+            sessionElement.style.opacity = '0.4';
+            sessionElement.style.pointerEvents = 'none';
+        }
+
+        // NOW kill the session on server (socket already disconnected, won't receive exit message)
         try {
-            const response = await fetch(`/api/servers/${serverId}/sessions/${encodeURIComponent(name)}`, {
-                method: 'DELETE'
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+            await fetch(`/api/servers/${serverId}/sessions/${encodeURIComponent(name)}`, {
+                method: 'DELETE',
+                signal: controller.signal
             });
 
-            if (response.ok) {
-                if (currentSession === name && currentServerId === serverId) {
-                    currentSession = null;
-                    document.getElementById('currentSessionName').textContent = 'No session selected';
-                    document.getElementById('windowTabs').innerHTML = '';
-                    updateServerInfo();
-                    if (term) term.clear();
-                }
-                await loadSessions();
-            }
+            clearTimeout(timeoutId);
         } catch (error) {
             console.error('Failed to kill session:', error);
         }
+
+        // Update terminal with final message
+        if (isCurrentSession && term) {
+            term.clear();
+            term.writeln('');
+            term.writeln('  \x1b[1;38;5;214m⚡ CLAUDE TERMINAL\x1b[0m');
+            term.writeln('  \x1b[38;5;244mSession ended\x1b[0m');
+            term.writeln('');
+            term.writeln('  \x1b[90mSelect a session or create a new one\x1b[0m');
+            term.writeln('');
+        }
+
+        await loadSessions();
     }
 
     // ===== NEW SESSION MODAL =====
@@ -702,7 +794,7 @@
         const modal = document.getElementById('newSessionModal');
         if (modal) {
             modal.classList.remove('hidden');
-            document.getElementById('newSessionName').value = `claude-${Date.now()}`;
+            document.getElementById('newSessionName').value = generateSessionName();
             document.getElementById('startClaudeCode').checked = true;
             updateServerDropdowns();
 
@@ -731,30 +823,53 @@
         document.getElementById('newSessionDir').value = dir;
     };
 
+    // Fun session name generator
+    const sessionAdjectives = ['swift', 'cosmic', 'quantum', 'hyper', 'turbo', 'mega', 'ultra', 'super', 'epic', 'mighty'];
+    const sessionNouns = ['falcon', 'phoenix', 'dragon', 'wolf', 'raven', 'tiger', 'hawk', 'viper', 'spark', 'bolt',
+        'r2d2', 'c3po', 'bb8', 'k2so', 'ig11', 'grogu', 'yoda', 'chewie', 'solo', 'leia'];
+
+    function generateSessionName() {
+        const adj = sessionAdjectives[Math.floor(Math.random() * sessionAdjectives.length)];
+        const noun = sessionNouns[Math.floor(Math.random() * sessionNouns.length)];
+        return `claude-${adj}-${noun}`;
+    }
+
     window.submitNewSession = async function() {
         const serverSelect = document.getElementById('sessionServer');
         const nameInput = document.getElementById('newSessionName');
         const dirInput = document.getElementById('newSessionDir');
         const claudeCheckbox = document.getElementById('startClaudeCode');
+        const loadingOverlay = document.getElementById('newSessionLoading');
 
         const serverId = serverSelect.value;
-        const sessionName = nameInput.value.trim() || `claude-${Date.now()}`;
+        const sessionName = nameInput.value.trim() || generateSessionName();
         const directory = dirInput.value.trim() || '/root';
         const startClaude = claudeCheckbox.checked;
+
+        // Show loading overlay
+        if (loadingOverlay) {
+            loadingOverlay.classList.remove('hidden');
+        }
 
         // Build command
         let command = `cd ${directory} && clear`;
         if (startClaude) {
-            // Use full path since container environment may not have ~/.local/bin in PATH
-            command += ' && /root/.local/bin/claude';
+            // Try claude from PATH first, then user's local bin, then show error
+            command += ' && (command -v claude >/dev/null 2>&1 && exec claude || [ -x "$HOME/.local/bin/claude" ] && exec "$HOME/.local/bin/claude" || echo "Error: Claude CLI not found. Install with: npm install -g @anthropic-ai/claude-code")';
         }
 
         try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
             const response = await fetch(`/api/servers/${serverId}/sessions`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionName, command })
+                body: JSON.stringify({ sessionName, command }),
+                signal: controller.signal
             });
+
+            clearTimeout(timeoutId);
 
             if (response.ok) {
                 closeNewSessionModal();
@@ -770,11 +885,21 @@
                 connectToSession(sessionName);
             } else {
                 const error = await response.json();
-                alert('Failed to create session: ' + (error.error || 'Unknown error'));
+                showToast('Failed to create session: ' + (error.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Failed to create session:', error);
-            alert('Failed to create session: ' + error.message);
+            console.error('Error type:', typeof error, 'Name:', error?.name, 'Message:', error?.message);
+            if (error.name === 'AbortError') {
+                showToast('Request timed out. The session may still have been created - try refreshing.', 'warning');
+            } else {
+                showToast('Failed to create session: ' + (error?.message || error?.toString() || 'Network error'), 'error');
+            }
+        } finally {
+            // Hide loading overlay
+            if (loadingOverlay) {
+                loadingOverlay.classList.add('hidden');
+            }
         }
     };
 
@@ -849,7 +974,7 @@
 
             if (response.ok) {
                 closeChangePasswordModal();
-                alert('Password changed successfully');
+                showToast('Password changed successfully', 'success');
             } else {
                 const data = await response.json();
                 errorEl.textContent = data.error || 'Failed to change password';
@@ -951,10 +1076,11 @@
                 }
             } else {
                 const error = await response.json();
-                alert('Failed to delete server: ' + (error.error || 'Unknown error'));
+                showToast('Failed to delete server: ' + (error.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Failed to delete server:', error);
+            showToast('Failed to delete server', 'error');
         }
     };
 
@@ -1054,15 +1180,15 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    alert('Connection successful: ' + data.message);
+                    showToast(data.message || 'Connection successful', 'success');
                 } else {
-                    alert('Connection failed: ' + data.error);
+                    showToast('Connection failed: ' + data.error, 'error');
                 }
             } else {
-                alert('Please save the server first, then test the connection.');
+                showToast('Please save the server first, then test the connection', 'warning');
             }
         } catch (error) {
-            alert('Connection test failed: ' + error.message);
+            showToast('Connection test failed: ' + error.message, 'error');
         } finally {
             btn.textContent = originalText;
             btn.disabled = false;
@@ -1081,22 +1207,22 @@
         const defaultPath = document.getElementById('editServerPath').value.trim() || '/root';
 
         if (!name) {
-            alert('Please enter a server name');
+            showToast('Please enter a server name', 'warning');
             return;
         }
 
         if (!serverId && (!host || !username)) {
-            alert('Please fill in host and username');
+            showToast('Please fill in host and username', 'warning');
             return;
         }
 
         if (!serverId && authType === 'password' && !password) {
-            alert('Please enter a password');
+            showToast('Please enter a password', 'warning');
             return;
         }
 
         if (!serverId && authType === 'key' && !privateKey) {
-            alert('Please enter a private key');
+            showToast('Please enter a private key', 'warning');
             return;
         }
 
@@ -1118,36 +1244,52 @@
 
             if (response.ok) {
                 const wasNewServer = !serverId;
-                const shouldReturnToNewSession = returnToNewSessionModal && wasNewServer;
-                returnToNewSessionModal = false; // Clear before closing modal
+                const data = await response.json();
 
                 await loadServers();
 
-                // Close modal without triggering return logic
-                const modal = document.getElementById('editServerModal');
-                if (modal) modal.classList.add('hidden');
+                if (wasNewServer && data.server && data.server.id) {
+                    // For new servers: update the form with the new ID so they can test
+                    document.getElementById('editServerId').value = data.server.id;
+                    document.getElementById('editServerTitle').textContent = 'Edit Server';
 
-                // If we came from the New Session modal, go back there with new server selected
-                if (shouldReturnToNewSession) {
-                    openNewSessionModal();
-                    // Select the newly added server
+                    // Show success and prompt to test
+                    const btn = document.querySelector('#editServerModal .btn-primary');
+                    const originalText = btn.textContent;
+                    btn.textContent = 'Saved!';
+                    btn.style.background = 'var(--success)';
                     setTimeout(() => {
-                        const serverSelect = document.getElementById('sessionServer');
-                        if (serverSelect && servers.length > 0) {
-                            serverSelect.value = servers[servers.length - 1].id;
-                            updateSessionDirFromServer();
-                        }
-                    }, 100);
+                        btn.textContent = originalText;
+                        btn.style.background = '';
+                    }, 2000);
                 } else {
-                    openServersModal();
+                    // For existing servers: close and return
+                    const shouldReturnToNewSession = returnToNewSessionModal;
+                    returnToNewSessionModal = false;
+
+                    const modal = document.getElementById('editServerModal');
+                    if (modal) modal.classList.add('hidden');
+
+                    if (shouldReturnToNewSession) {
+                        openNewSessionModal();
+                        setTimeout(() => {
+                            const serverSelect = document.getElementById('sessionServer');
+                            if (serverSelect && servers.length > 0) {
+                                serverSelect.value = servers[servers.length - 1].id;
+                                updateSessionDirFromServer();
+                            }
+                        }, 100);
+                    } else {
+                        openServersModal();
+                    }
                 }
             } else {
                 const error = await response.json();
-                alert('Failed to save server: ' + (error.error || 'Unknown error'));
+                showToast('Failed to save server: ' + (error.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Failed to save server:', error);
-            alert('Failed to save server: ' + error.message);
+            showToast('Failed to save server: ' + error.message, 'error');
         }
     };
 })();

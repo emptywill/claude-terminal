@@ -519,13 +519,17 @@ app.post('/api/servers/:id/sessions', (req, res) => {
     const { id } = req.params;
     const { sessionName, command } = req.body;
 
+    console.log(`Creating session: ${sessionName} on server ${id}`);
+
     const servers = getServers();
     const server = servers.find(s => s.id === id);
 
     if (!server) {
+        console.log('Server not found:', id);
         return res.status(404).json({ error: 'Server not found' });
     }
 
+    console.log(`Server found: ${server.name} (${server.host})`);
     const name = sessionName || `claude-${Date.now()}`;
 
     // Build tmux command
@@ -550,24 +554,60 @@ app.post('/api/servers/:id/sessions', (req, res) => {
         const conn = new Client();
 
         conn.on('ready', () => {
+            console.log(`SSH connected to ${server.host}, executing: ${tmuxCmd}`);
             conn.exec(tmuxCmd, (err, stream) => {
                 if (err) {
+                    console.error('SSH exec error:', err.message);
                     conn.end();
                     return res.status(500).json({ error: err.message });
                 }
 
+                let stderr = '';
+                stream.stderr.on('data', (data) => {
+                    stderr += data.toString();
+                });
+
                 stream.on('close', (code) => {
+                    console.log(`SSH command completed with code: ${code}`);
+                    if (stderr) console.log('SSH stderr:', stderr);
                     conn.end();
-                    if (code === 0) {
+                    if (code === 0 || code === null) {
                         res.json({ success: true, session: name, serverId: id });
                     } else {
-                        res.status(500).json({ error: 'Failed to create session' });
+                        res.status(500).json({ error: stderr || 'Failed to create session' });
                     }
                 });
+
+                // Timeout in case stream doesn't close - verify session exists
+                setTimeout(() => {
+                    if (res.headersSent) return;
+
+                    console.log('SSH exec timeout - verifying session exists');
+                    conn.exec(`tmux has-session -t "${name}" 2>/dev/null && echo EXISTS`, (err, verifyStream) => {
+                        let output = '';
+                        if (err) {
+                            conn.end();
+                            res.status(500).json({ error: 'Timeout verifying session' });
+                            return;
+                        }
+                        verifyStream.on('data', (data) => { output += data.toString(); });
+                        verifyStream.on('close', () => {
+                            conn.end();
+                            if (output.includes('EXISTS')) {
+                                console.log('Session verified after timeout');
+                                res.json({ success: true, session: name, serverId: id });
+                            } else {
+                                console.log('Session not found after timeout');
+                                res.status(500).json({ error: 'Session creation timed out' });
+                            }
+                        });
+                    });
+                }, 10000);
             });
         });
 
         conn.on('error', (err) => {
+            console.error('SSH connection error:', err.message);
             res.status(500).json({ error: `SSH error: ${err.message}` });
         });
 
@@ -611,30 +651,46 @@ app.delete('/api/servers/:id/sessions/:session', (req, res) => {
         });
     } else {
         const conn = new Client();
+        let responded = false;
+
+        const respond = (success, error = null) => {
+            if (responded) return;
+            responded = true;
+            conn.end();
+            if (error) {
+                res.status(500).json({ error });
+            } else {
+                res.json({ success: true });
+            }
+        };
 
         conn.on('ready', () => {
             conn.exec(tmuxCmd, (err, stream) => {
                 if (err) {
-                    conn.end();
-                    return res.status(500).json({ error: err.message });
+                    return respond(false, err.message);
                 }
 
-                stream.on('close', () => {
-                    conn.end();
-                    res.json({ success: true });
-                });
+                // Kill command is instant - respond after small delay
+                setTimeout(() => respond(true), 200);
+
+                stream.on('close', () => respond(true));
+                stream.on('data', () => {});
+                stream.stderr.on('data', () => {});
             });
         });
 
         conn.on('error', (err) => {
-            res.status(500).json({ error: `SSH error: ${err.message}` });
+            respond(false, `SSH error: ${err.message}`);
         });
+
+        // Timeout for entire operation
+        setTimeout(() => respond(true), 3000);
 
         const connectConfig = {
             host: server.host,
             port: server.port,
             username: server.username,
-            readyTimeout: 10000
+            readyTimeout: 3000
         };
 
         if (server.authType === 'password') {

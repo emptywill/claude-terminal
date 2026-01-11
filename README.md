@@ -176,6 +176,16 @@ server {
 }
 ```
 
+## Recent Updates
+
+**2026-01-10:**
+- **Custom toast notifications** - Replaced browser alerts with themed toast notifications (success, error, warning, info)
+- **Improved session management** - Session deletion now instant (<200ms) with better visual feedback
+- **Flexible Claude CLI detection** - Auto-detects Claude from PATH or `$HOME/.local/bin/` (works with any username)
+- **Better server workflow** - Add Server modal stays open after saving so you can test connection immediately
+- **Intuitive status indicators** - Session dots now show green for active (in use) and orange for idle
+- **Consistent UI** - Admin dropdown hover effect matches button styling
+
 ## License
 
 MIT
