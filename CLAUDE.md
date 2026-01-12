@@ -75,7 +75,7 @@ For full access to host directories and Claude CLI, configure SSH to your host m
    - **Host:** `172.17.0.1` (Docker's default host IP) or your host's IP
    - **Port:** `22`
    - **Auth:** SSH key or password
-   - **Default Path:** Your projects directory (e.g., `/home/user/projects`)
+   - **Saved Paths:** Add your project directories (e.g., `/home/user/projects`)
 
 ### Remote SSH
 For remote servers - sessions run on the remote machine with full access to its filesystem.
@@ -100,6 +100,7 @@ See "Development Workflow" at top of this file.
 
 ## Recent Changes
 
+- Multiple saved paths per server (dropdown selection when creating sessions)
 - Drag-and-drop session reordering (order persists in localStorage)
 - Removed "Local" server type - all servers now use SSH
 - Session deduplication to prevent duplicates in menu
@@ -107,7 +108,6 @@ See "Development Workflow" at top of this file.
 - Auto-copy on Shift+select (bypasses tmux mouse)
 - Ctrl+V paste (xterm custom key handler)
 - SIGKILL for PTY cleanup (prevents Claude interruption on restart)
-- Cache-busting headers for JS/CSS
 
 ## Android App
 

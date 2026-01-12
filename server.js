@@ -232,7 +232,8 @@ app.get('/api/servers', (req, res) => {
         username: s.username,
         authType: s.authType,
         isDefault: s.isDefault,
-        defaultPath: s.defaultPath || '/root',
+        // Support both old defaultPath and new savedPaths
+        savedPaths: s.savedPaths || (s.defaultPath ? [s.defaultPath] : ['/root']),
         createdAt: s.createdAt
     }));
     res.json(safeServers);
@@ -240,7 +241,7 @@ app.get('/api/servers', (req, res) => {
 
 // Add new server
 app.post('/api/servers', (req, res) => {
-    const { name, host, port, username, authType, password, privateKey, defaultPath } = req.body;
+    const { name, host, port, username, authType, password, privateKey, savedPaths } = req.body;
 
     if (!name || !host || !username) {
         return res.status(400).json({ error: 'Name, host, and username are required' });
@@ -264,7 +265,7 @@ app.post('/api/servers', (req, res) => {
         authType: authType || 'password',
         password: authType === 'password' ? password : undefined,
         privateKey: authType === 'key' ? privateKey : undefined,
-        defaultPath: defaultPath || '/root',
+        savedPaths: savedPaths && savedPaths.length > 0 ? savedPaths : ['/root'],
         isDefault: false,
         createdAt: new Date().toISOString()
     };
@@ -281,7 +282,7 @@ app.post('/api/servers', (req, res) => {
             port: newServer.port,
             username: newServer.username,
             authType: newServer.authType,
-            defaultPath: newServer.defaultPath,
+            savedPaths: newServer.savedPaths,
             isDefault: newServer.isDefault
         }
     });
@@ -290,7 +291,7 @@ app.post('/api/servers', (req, res) => {
 // Update server
 app.put('/api/servers/:id', (req, res) => {
     const { id } = req.params;
-    const { name, host, port, username, authType, password, privateKey, defaultPath } = req.body;
+    const { name, host, port, username, authType, password, privateKey, savedPaths } = req.body;
 
     const servers = getServers();
     const serverIndex = servers.findIndex(s => s.id === id);
@@ -299,24 +300,24 @@ app.put('/api/servers/:id', (req, res) => {
         return res.status(404).json({ error: 'Server not found' });
     }
 
-    // Don't allow editing the local server's connection settings
-    if (servers[serverIndex].authType === 'local') {
-        servers[serverIndex].name = name || servers[serverIndex].name;
-        servers[serverIndex].defaultPath = defaultPath || servers[serverIndex].defaultPath || '/srv/containers';
-    } else {
-        servers[serverIndex] = {
-            ...servers[serverIndex],
-            name: name || servers[serverIndex].name,
-            host: host || servers[serverIndex].host,
-            port: port || servers[serverIndex].port,
-            username: username || servers[serverIndex].username,
-            authType: authType || servers[serverIndex].authType,
-            password: authType === 'password' ? (password || servers[serverIndex].password) : undefined,
-            privateKey: authType === 'key' ? (privateKey || servers[serverIndex].privateKey) : undefined,
-            defaultPath: defaultPath || servers[serverIndex].defaultPath || '/root',
-            updatedAt: new Date().toISOString()
-        };
-    }
+    // Get existing savedPaths or convert from old defaultPath
+    const existingPaths = servers[serverIndex].savedPaths ||
+        (servers[serverIndex].defaultPath ? [servers[serverIndex].defaultPath] : ['/root']);
+
+    servers[serverIndex] = {
+        ...servers[serverIndex],
+        name: name || servers[serverIndex].name,
+        host: host || servers[serverIndex].host,
+        port: port || servers[serverIndex].port,
+        username: username || servers[serverIndex].username,
+        authType: authType || servers[serverIndex].authType,
+        password: authType === 'password' ? (password || servers[serverIndex].password) : undefined,
+        privateKey: authType === 'key' ? (privateKey || servers[serverIndex].privateKey) : undefined,
+        savedPaths: savedPaths && savedPaths.length > 0 ? savedPaths : existingPaths,
+        updatedAt: new Date().toISOString()
+    };
+    // Remove old defaultPath field if it exists
+    delete servers[serverIndex].defaultPath;
 
     saveServers(servers);
     res.json({ success: true });

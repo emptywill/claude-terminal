@@ -14,48 +14,32 @@ Manage persistent terminal sessions across multiple servers from one web dashboa
 
 ## How It Works
 
-Claude Terminal provides a web-based dashboard for managing tmux sessions. It supports two modes:
-
-### Local Mode
-Run the container directly on a server to manage tmux sessions on that machine:
+Claude Terminal provides a web-based dashboard for managing tmux sessions across multiple servers via SSH:
 
 ```
-Browser ──(3000)──► Claude Terminal ──► Local tmux socket
-```
-
-### Multi-Server Mode
-Run the container on one machine (e.g., homelab) and manage tmux sessions on multiple remote servers via SSH:
-
-```
-Browser ──(3000)──► Claude Terminal ──(SSH:22)──► Remote Server 1
-                                    ──(SSH:22)──► Remote Server 2
+Browser ──(3000)──► Claude Terminal ──(SSH:22)──► Server 1
+                                    ──(SSH:22)──► Server 2
                                     ──(SSH:22)──► VPS
 ```
 
-### Why Multi-Server Mode?
+### Use Cases
 
-This is particularly useful when your remote servers have strict firewall rules. For example:
-
-**Scenario:** You have a VPS that only allows SSH (port 22) from your home IP for security. You want to run Claude Code on the VPS from work or a hotel.
-
-**Solution:**
-1. Run Claude Terminal on your homelab (which has your home IP)
-2. Add the VPS as a remote server in Claude Terminal
-3. Access your homelab's Claude Terminal from anywhere (via VPN, Tailscale, etc.)
-4. Your homelab SSHs into the VPS on your behalf
+**Homelab Gateway:** Run Claude Terminal on your homelab and access servers that only allow SSH from your home IP:
 
 ```
 Work/Hotel ──(VPN)──► Homelab:3000 ──(SSH)──► VPS:22
    (you)            (claude-terminal)     (only allows home IP)
 ```
 
-This gives you a single dashboard to manage Claude sessions across all your servers, with your homelab acting as a secure gateway.
+**Multi-Server Dashboard:** Single interface to manage Claude Code sessions across all your servers - VPS, homelab, remote machines.
 
 ## Features
 
-- **Multi-server SSH management** - Single dashboard for local tmux + multiple remote servers via SSH
+- **Multi-server SSH management** - Single dashboard for multiple remote servers via SSH
 - **Persistent sessions** - tmux keeps sessions alive 24/7, reconnect anytime from anywhere
-- **Claude Code optimized** - Auto-start Claude, custom paths per server, mobile-friendly controls
+- **Drag-and-drop session reordering** - Organize sessions your way, order persists across reloads
+- **Multiple saved paths per server** - Quick-select working directories when creating sessions
+- **Claude Code optimized** - Auto-start Claude, mobile-friendly controls
 - **Mobile-ready** - Touch controls for ESC (stop Claude thinking), scroll, copy/paste, zoom
 - **Toast notifications** - All feedback via themed notifications (success, error, warning, info)
 - **Instant operations** - Session deletion <200ms, real-time terminal via Socket.IO
@@ -194,21 +178,19 @@ server {
 ## Recent Updates
 
 **2026-01-12:**
-- **Desktop scrolling** - Native xterm.js scrolling (mouse wheel, Shift+PageUp/Down), scroll button hidden on desktop
-- **Auto-copy on Shift+select** - Text is automatically copied to clipboard when you Shift+select (bypasses tmux mouse)
-- **Ctrl+V paste** - Paste from clipboard with Ctrl+V (intercepted before terminal)
-- **Mobile scroll button** - Scroll button now mobile-only, uses tmux copy mode for touch scrolling
-- **Auto-focus terminal** - Terminal automatically focuses when selecting a session
-- **SIGKILL for PTY cleanup** - Prevents Claude from being interrupted during container restarts
-- **Cache-busting headers** - Server sends no-cache headers for JS/CSS files
+- **Multiple saved paths per server** - Define multiple working directories per server, select from dropdown when creating sessions
+- **Drag-and-drop session reordering** - Reorder sessions in sidebar, order persists in localStorage
+- **Removed Local server type** - All servers now use SSH (cleaner, avoids duplicate sessions)
+- **Session deduplication** - Prevents same session appearing twice in menu
+- **Desktop scrolling** - Native xterm.js scrolling (mouse wheel, Shift+PageUp/Down)
+- **Auto-copy on Shift+select** - Text copied to clipboard when Shift+selecting
+- **Ctrl+V paste** - Paste from clipboard with Ctrl+V
+- **Auto-focus terminal** - Terminal focuses when selecting a session
 
 **2026-01-10:**
-- **Custom toast notifications** - Replaced browser alerts with themed toast notifications (success, error, warning, info)
-- **Improved session management** - Session deletion now instant (<200ms) with better visual feedback
-- **Flexible Claude CLI detection** - Auto-detects Claude from PATH or `$HOME/.local/bin/` (works with any username)
-- **Better server workflow** - Add Server modal stays open after saving so you can test connection immediately
-- **Intuitive status indicators** - Session dots now show green for active (in use) and orange for idle
-- **Consistent UI** - Admin dropdown hover effect matches button styling
+- **Custom toast notifications** - Themed notifications (success, error, warning, info)
+- **Instant session deletion** - <200ms with visual feedback
+- **Flexible Claude CLI detection** - Auto-detects from PATH or `$HOME/.local/bin/`
 
 ## License
 

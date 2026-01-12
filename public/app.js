@@ -983,11 +983,28 @@
     function updateSessionDirFromServer() {
         const serverSelect = document.getElementById('sessionServer');
         const dirInput = document.getElementById('newSessionDir');
+        const pathsDropdown = document.getElementById('savedPathsDropdown');
+
         if (serverSelect && dirInput) {
             const server = servers.find(s => s.id === serverSelect.value);
-            dirInput.value = server?.defaultPath || '/root';
+            const savedPaths = server?.savedPaths || ['/root'];
+
+            // Set the first saved path as default
+            dirInput.value = savedPaths[0] || '/root';
+
+            // Populate the dropdown
+            if (pathsDropdown) {
+                pathsDropdown.innerHTML = '<option value="">-- Saved Paths --</option>' +
+                    savedPaths.map(p => `<option value="${p}">${p}</option>`).join('');
+            }
         }
     }
+
+    window.selectSavedPath = function(path) {
+        if (path) {
+            document.getElementById('newSessionDir').value = path;
+        }
+    };
 
     window.closeNewSessionModal = function() {
         const modal = document.getElementById('newSessionModal');
@@ -1262,6 +1279,7 @@
     // ===== EDIT SERVER MODAL =====
 
     let returnToNewSessionModal = false;
+    let editingServerPaths = []; // Track paths being edited
 
     window.openEditServerModal = function(server = null, returnToSession = false) {
         returnToNewSessionModal = returnToSession;
@@ -1281,14 +1299,14 @@
                 document.getElementById('editServerAuthType').value = server.authType;
                 document.getElementById('editServerPassword').value = '';
                 document.getElementById('editServerKey').value = '';
-                document.getElementById('editServerPath').value = server.defaultPath || '/root';
 
-                // Disable host/port/user for local server
-                const isLocal = server.authType === 'local';
-                document.getElementById('editServerHost').disabled = isLocal;
-                document.getElementById('editServerPort').disabled = isLocal;
-                document.getElementById('editServerUser').disabled = isLocal;
-                document.getElementById('editServerAuthType').disabled = isLocal;
+                // Load saved paths
+                editingServerPaths = [...(server.savedPaths || ['/root'])];
+
+                document.getElementById('editServerHost').disabled = false;
+                document.getElementById('editServerPort').disabled = false;
+                document.getElementById('editServerUser').disabled = false;
+                document.getElementById('editServerAuthType').disabled = false;
             } else {
                 title.textContent = 'Add Server';
                 document.getElementById('editServerId').value = '';
@@ -1299,13 +1317,18 @@
                 document.getElementById('editServerAuthType').value = 'password';
                 document.getElementById('editServerPassword').value = '';
                 document.getElementById('editServerKey').value = '';
-                document.getElementById('editServerPath').value = '/root';
+
+                // Default path for new server
+                editingServerPaths = ['/root'];
 
                 document.getElementById('editServerHost').disabled = false;
                 document.getElementById('editServerPort').disabled = false;
                 document.getElementById('editServerUser').disabled = false;
                 document.getElementById('editServerAuthType').disabled = false;
             }
+
+            // Render saved paths list
+            renderEditingPaths();
 
             // Update auth type visibility
             const authType = document.getElementById('editServerAuthType').value;
@@ -1317,6 +1340,47 @@
                 document.getElementById('editKeyGroup').classList.remove('hidden');
             }
         }
+    };
+
+    function renderEditingPaths() {
+        const list = document.getElementById('savedPathsList');
+        if (!list) return;
+
+        if (editingServerPaths.length === 0) {
+            list.innerHTML = '<div class="form-hint" style="padding: 0.5rem;">No paths added yet</div>';
+            return;
+        }
+
+        list.innerHTML = editingServerPaths.map((path, i) => `
+            <div class="saved-path-item">
+                <span class="path-text">${path}</span>
+                <button type="button" class="remove-path" onclick="removeServerPath(${i})" title="Remove">&times;</button>
+            </div>
+        `).join('');
+    }
+
+    window.addServerPath = function() {
+        const input = document.getElementById('newPathInput');
+        const path = input.value.trim();
+
+        if (!path) {
+            showToast('Please enter a path', 'warning');
+            return;
+        }
+
+        if (editingServerPaths.includes(path)) {
+            showToast('Path already exists', 'warning');
+            return;
+        }
+
+        editingServerPaths.push(path);
+        input.value = '';
+        renderEditingPaths();
+    };
+
+    window.removeServerPath = function(index) {
+        editingServerPaths.splice(index, 1);
+        renderEditingPaths();
     };
 
     window.closeEditServerModal = function() {
@@ -1379,7 +1443,7 @@
         const authType = document.getElementById('editServerAuthType').value;
         const password = document.getElementById('editServerPassword').value;
         const privateKey = document.getElementById('editServerKey').value;
-        const defaultPath = document.getElementById('editServerPath').value.trim() || '/root';
+        const savedPaths = editingServerPaths.length > 0 ? editingServerPaths : ['/root'];
 
         if (!name) {
             showToast('Please enter a server name', 'warning');
@@ -1407,13 +1471,13 @@
                 response = await fetch(`/api/servers/${serverId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, host, port, username, authType, password, privateKey, defaultPath })
+                    body: JSON.stringify({ name, host, port, username, authType, password, privateKey, savedPaths })
                 });
             } else {
                 response = await fetch('/api/servers', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, host, port, username, authType, password, privateKey, defaultPath })
+                    body: JSON.stringify({ name, host, port, username, authType, password, privateKey, savedPaths })
                 });
             }
 
