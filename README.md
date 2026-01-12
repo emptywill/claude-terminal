@@ -120,6 +120,8 @@ Adjust the volume mount accordingly.
 ### Desktop
 - **Mouse wheel** - Scroll through terminal history (native xterm.js scrolling)
 - **Shift+PageUp/PageDown** - Scroll larger amounts
+- **Select text** - Auto-copies to clipboard on release
+- **Ctrl+V** - Paste from clipboard
 - **Zoom +/-** buttons - Adjust font size
 
 ### Mobile
@@ -194,6 +196,7 @@ server {
 **2026-01-12:**
 - **Desktop scrolling** - Native xterm.js scrolling (mouse wheel, Shift+PageUp/Down), scroll button hidden on desktop
 - **Auto-copy on select** - Text is automatically copied to clipboard when you select it (tracks during drag)
+- **Ctrl+V paste** - Paste from clipboard with Ctrl+V (intercepted before terminal)
 - **Mobile scroll button** - Scroll button now mobile-only, uses tmux copy mode for touch scrolling
 - **Auto-focus terminal** - Terminal automatically focuses when selecting a session
 - **SIGKILL for PTY cleanup** - Prevents Claude from being interrupted during container restarts
