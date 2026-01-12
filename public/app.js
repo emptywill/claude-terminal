@@ -721,6 +721,22 @@
             cols: term.cols,
             rows: term.rows
         });
+
+        // Exit any existing copy mode after attaching (fix scroll mode state on refresh)
+        setTimeout(() => {
+            if (socket && currentSession) {
+                socket.emit('terminal_input', { data: 'q' });
+                // Reset scroll mode UI state
+                isScrollMode = false;
+                const scrollBtn = document.getElementById('btnTmuxScroll');
+                const scrollOverlay = document.getElementById('scrollOverlay');
+                scrollBtn?.classList.remove('active');
+                if (scrollBtn?.querySelector('span')) {
+                    scrollBtn.querySelector('span').textContent = '📜';
+                }
+                scrollOverlay?.classList.remove('visible');
+            }
+        }, 100);
     }
 
     // Kill session
