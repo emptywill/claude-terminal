@@ -402,12 +402,12 @@
             if (isScrollMode) {
                 socket.emit('terminal_input', { data: 'q' });
                 scrollBtn.classList.remove('active');
-                scrollBtn.querySelector('span').textContent = '📜';
+                scrollBtn.querySelector('span').textContent = 'Scroll';
                 scrollOverlay?.classList.remove('visible');
             } else {
                 sendTmuxCommand('[');
                 scrollBtn.classList.add('active');
-                scrollBtn.querySelector('span').textContent = '📜 Exit';
+                scrollBtn.querySelector('span').textContent = 'Exit Scroll';
                 scrollOverlay?.classList.add('visible');
             }
             isScrollMode = !isScrollMode;
@@ -732,7 +732,7 @@
                 const scrollOverlay = document.getElementById('scrollOverlay');
                 scrollBtn?.classList.remove('active');
                 if (scrollBtn?.querySelector('span')) {
-                    scrollBtn.querySelector('span').textContent = '📜';
+                    scrollBtn.querySelector('span').textContent = 'Scroll';
                 }
                 scrollOverlay?.classList.remove('visible');
             }
