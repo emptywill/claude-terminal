@@ -343,9 +343,15 @@
             }
         });
 
-        // Send input to server
+        // Send input to server (filter out mouse events when selecting)
         term.onData((data) => {
             if (socket && socket.connected && currentSession) {
+                // Don't send mouse events if user has text selected (allows copy)
+                // Mouse events start with ESC [ M or ESC [ <
+                const isMouseEvent = data.startsWith('\x1b[M') || data.startsWith('\x1b[<');
+                if (isMouseEvent && term.hasSelection()) {
+                    return; // Don't send mouse release to tmux, keep selection
+                }
                 socket.emit('terminal_input', { data });
             }
         });
