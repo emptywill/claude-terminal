@@ -350,22 +350,26 @@
             }
         });
 
-        // Auto-copy on selection (desktop) - copies text when mouse is released with selection
-        // Use mouseup because onSelectionChange fires after selection is cleared
+        // Auto-copy on selection (desktop) - track selection during drag
+        let lastSelection = '';
+
+        // Continuously track selection while mouse is down
+        container.addEventListener('mousemove', (e) => {
+            if (e.buttons === 1 && term.hasSelection()) { // Left mouse button held
+                lastSelection = term.getSelection();
+            }
+        });
+
+        // Copy on mouse release if we captured a selection
         container.addEventListener('mouseup', () => {
-            // Small delay to let xterm.js process the selection first
-            setTimeout(() => {
-                if (term.hasSelection()) {
-                    const text = term.getSelection();
-                    if (text) {
-                        navigator.clipboard.writeText(text).then(() => {
-                            showToast('Copied to clipboard', 'success', 1500);
-                        }).catch((err) => {
-                            console.error('Copy failed:', err);
-                        });
-                    }
-                }
-            }, 10);
+            if (lastSelection) {
+                navigator.clipboard.writeText(lastSelection).then(() => {
+                    showToast('Copied to clipboard', 'success', 1500);
+                }).catch((err) => {
+                    console.error('Copy failed:', err);
+                });
+                lastSelection = '';
+            }
         });
 
         // Disable mobile autocapitalize
