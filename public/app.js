@@ -372,6 +372,19 @@
 
     // Initialize button controls
     function initControls() {
+        // Force scroll mode OFF on page load (can't preserve state across reloads)
+        isScrollMode = false;
+        const scrollBtn = document.getElementById('btnTmuxScroll');
+        const scrollOverlay = document.getElementById('scrollOverlay');
+        if (scrollBtn) {
+            scrollBtn.classList.remove('active');
+            const span = scrollBtn.querySelector('span');
+            if (span) span.textContent = 'Scroll';
+        }
+        if (scrollOverlay) {
+            scrollOverlay.classList.remove('visible');
+        }
+
         // ESC button
         document.getElementById('btnEsc')?.addEventListener('click', () => {
             if (currentSession && socket) {
