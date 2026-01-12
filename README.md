@@ -192,11 +192,12 @@ server {
 ## Recent Updates
 
 **2026-01-12:**
-- **Desktop scrolling improvement** - Removed scroll button on desktop, use native xterm.js scrolling (mouse wheel, Shift+PageUp/Down)
+- **Desktop scrolling** - Native xterm.js scrolling (mouse wheel, Shift+PageUp/Down), scroll button hidden on desktop
+- **Auto-copy on select** - Text is automatically copied to clipboard when you select it (tracks during drag)
 - **Mobile scroll button** - Scroll button now mobile-only, uses tmux copy mode for touch scrolling
-- **Auto-focus terminal** - Terminal automatically focuses when selecting a session (no need to click)
-- **Improved session attach** - Sends ESC on attach to exit any existing tmux copy mode
-- **Cache-busting headers** - Server now sends no-cache headers for JS/CSS files
+- **Auto-focus terminal** - Terminal automatically focuses when selecting a session
+- **SIGKILL for PTY cleanup** - Prevents Claude from being interrupted during container restarts
+- **Cache-busting headers** - Server sends no-cache headers for JS/CSS files
 
 **2026-01-10:**
 - **Custom toast notifications** - Replaced browser alerts with themed toast notifications (success, error, warning, info)
