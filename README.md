@@ -21,8 +21,8 @@ Manage persistent terminal sessions across multiple servers from one web dashboa
                                ┌────────►│                              │
 ┌─────────────┐    ┌──────────┐│         └──────────────────────────────┘
 │   Browser   │    │  Claude  ││         ┌──────────────────────────────┐
-│   Phone     │───►│ Terminal ││    SSH  │        Homelab               │
-│   Tablet    │    │ (Docker) │├────────►│  tmux ──► Claude Code        │
+│ Android App │───►│ Terminal ││    SSH  │        Homelab               │
+│             │    │ (Docker) │├────────►│  tmux ──► Claude Code        │
 └─────────────┘    └──────────┘│         └──────────────────────────────┘
                                │         ┌──────────────────────────────┐
                                │    SSH  │        Dev Server            │
