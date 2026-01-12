@@ -58,16 +58,12 @@ Browser → Claude Terminal (Docker) → SSH → Host/Remote servers → tmux �
 
 | Mount | Purpose |
 |-------|---------|
-| `/tmp/tmux-0:/tmp/tmux-0` | Host tmux socket (optional, only for host access) |
 | `/srv/containers/claude-terminal/data:/app/data` | Persistent credentials/sessions |
 | `/srv/containers/claude-terminal/public:/app/public` | Frontend dev without rebuild |
 
-## tmux Requirements
+## Requirements
 
-tmux must be installed on **target SSH servers**, not on the Docker host:
-- Remote servers need tmux installed (`apt install tmux`)
-- Docker container already includes tmux
-- Host tmux socket mount only needed for accessing Docker host sessions
+tmux must be installed on **target SSH servers** (`apt install tmux`). All connections use SSH, so tmux runs on the remote servers, not in the Docker container.
 
 ## Server Types
 
