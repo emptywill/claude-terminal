@@ -32,7 +32,11 @@ A multi-server SSH tmux session manager optimized for Claude Code CLI. Web-based
 ## Architecture
 
 ```
-Browser → Claude Terminal (Docker) → SSH → Host/Remote servers → tmux → Claude Code CLI
+┌─────────────┐    ┌──────────┐         ┌──────────────────────────────┐
+│   Browser   │    │  Claude  │   SSH   │  Remote Server               │
+│ Android App │───►│ Terminal │────────►│  tmux ──► Claude Code        │
+└─────────────┘    │ (Docker) │         └──────────────────────────────┘
+                   └──────────┘
 ```
 
 ## Key Files
@@ -50,7 +54,7 @@ Browser → Claude Terminal (Docker) → SSH → Host/Remote servers → tmux �
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `3550` | Server port |
-| `SESSION_SECRET` | (from .env) | Session encryption |
+| `SESSION_SECRET` | random | Signs login cookies (`openssl rand -hex 32`) |
 | `DEFAULT_USER` | `admin` | Initial username |
 | `DEFAULT_PASS` | `admin` | Initial password |
 
@@ -89,10 +93,12 @@ For remote servers - sessions run on the remote machine with full access to its 
 - **Mouse wheel** - Scroll (native xterm.js)
 - **Shift+Select** - Auto-copies to clipboard
 - **Ctrl+V** - Paste from clipboard
+- **Commands** - Quick access to Claude Code slash commands
 - **Zoom +/-** - Font size
 
 ### Mobile
 - **ESC** - Stop Claude thinking
+- **Commands** - Claude Code slash commands dropdown
 - **Scroll** - tmux copy mode
 - **Copy/Paste** - Clipboard buttons
 - **Zoom +/-** - Font size
