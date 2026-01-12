@@ -134,7 +134,17 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use(express.static('public'));
+// Serve static files with cache control
+app.use(express.static('public', {
+    setHeaders: (res, path) => {
+        // Disable cache for JS/CSS to ensure updates are seen
+        if (path.endsWith('.js') || path.endsWith('.css')) {
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+        }
+    }
+}));
 
 // Auth endpoints
 app.post('/api/login', (req, res) => {
@@ -1087,7 +1097,9 @@ function attachRemoteTmux(socket, server, session, cols, rows) {
 function cleanupSocketConnection(socketId) {
     const ptySession = ptySessions.get(socketId);
     if (ptySession) {
-        ptySession.kill();
+        // Use SIGKILL to prevent any signals being sent to tmux
+        // Default kill() sends SIGHUP which can cause issues
+        ptySession.kill('SIGKILL');
         ptySessions.delete(socketId);
     }
 
