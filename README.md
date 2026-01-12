@@ -140,7 +140,7 @@ You're now connected to a persistent tmux session on your remote server.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `3000` | Server port |
-| `SESSION_SECRET` | random | Session encryption key (change in production!) |
+| `SESSION_SECRET` | random | Signs login cookies (generate with `openssl rand -hex 32`) |
 | `DEFAULT_USER` | `admin` | Initial admin username |
 | `DEFAULT_PASS` | `admin` | Initial admin password |
 
