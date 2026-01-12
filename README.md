@@ -63,8 +63,9 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - /tmp/tmux-0:/tmp/tmux-0
       - ./data:/app/data
+      # Optional: mount host tmux socket for Docker host access
+      # - /tmp/tmux-0:/tmp/tmux-0
     restart: unless-stopped
 ```
 
@@ -88,17 +89,26 @@ Then open `http://your-server:3000` in your browser.
 
 | Path | Description |
 |------|-------------|
-| `/tmp/tmux-0:/tmp/tmux-0` | **Required** - Host tmux socket for session management |
-| `./data:/app/data` | User credentials persistence |
+| `/tmp/tmux-0:/tmp/tmux-0` | **Optional** - Only needed to access Docker host's tmux sessions |
+| `./data:/app/data` | User credentials and server config persistence |
 
-### Tmux Socket Path
+## tmux Requirements
 
-The container needs access to the host's tmux socket. By default, tmux creates sockets at `/tmp/tmux-{UID}/`.
+**tmux must be installed on the servers you SSH into**, not on the machine running Docker.
 
-- **Root user (UID 0):** `/tmp/tmux-0`
-- **Regular user (UID 1000):** `/tmp/tmux-1000`
+- **Remote servers** - Install tmux on each target server (`apt install tmux`)
+- **Docker host access** - Mount the tmux socket (see below) and have tmux on the host
+- **Docker container** - Already includes tmux (no action needed)
 
-Adjust the volume mount accordingly.
+### Accessing Docker Host Sessions
+
+If you want to access tmux sessions on the machine running Docker itself:
+
+1. Install tmux on the host
+2. Mount the tmux socket - path depends on user:
+   - Root (UID 0): `/tmp/tmux-0:/tmp/tmux-0`
+   - Regular user (UID 1000): `/tmp/tmux-1000:/tmp/tmux-1000`
+3. SSH to the Docker host IP (usually `172.17.0.1`)
 
 ## Controls
 
