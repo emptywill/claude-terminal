@@ -115,16 +115,21 @@ The container needs access to the host's tmux socket. By default, tmux creates s
 
 Adjust the volume mount accordingly.
 
-## Mobile Controls
+## Controls
 
+### Desktop
+- **Mouse wheel** - Scroll through terminal history (native xterm.js scrolling)
+- **Shift+PageUp/PageDown** - Scroll larger amounts
+- **Zoom +/-** buttons - Adjust font size
+
+### Mobile
 | Button | Function |
 |--------|----------|
 | **ESC** | Send ESC key (stop Claude from thinking) |
-| **⌨️** | Toggle mobile keyboard |
-| **📜** | Enter/exit scroll mode |
-| **📋** | Copy selected text |
-| **📥** | Paste from clipboard |
-| **A- / A+** | Decrease/increase font size |
+| **Scroll** | Enter/exit tmux copy mode for scrolling |
+| **Copy** | Copy selected text |
+| **Paste** | Paste from clipboard |
+| **Zoom -/+** | Decrease/increase font size |
 | **+ Win** | Create new tmux window |
 | **Next** | Switch to next window |
 | **End** | Kill current session |
@@ -185,6 +190,13 @@ server {
 ```
 
 ## Recent Updates
+
+**2026-01-12:**
+- **Desktop scrolling improvement** - Removed scroll button on desktop, use native xterm.js scrolling (mouse wheel, Shift+PageUp/Down)
+- **Mobile scroll button** - Scroll button now mobile-only, uses tmux copy mode for touch scrolling
+- **Auto-focus terminal** - Terminal automatically focuses when selecting a session (no need to click)
+- **Improved session attach** - Sends ESC on attach to exit any existing tmux copy mode
+- **Cache-busting headers** - Server now sends no-cache headers for JS/CSS files
 
 **2026-01-10:**
 - **Custom toast notifications** - Replaced browser alerts with themed toast notifications (success, error, warning, info)

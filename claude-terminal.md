@@ -153,7 +153,17 @@ User Input (Android/Browser)
 The session manager currently uses large buttons for tmux sessions:
 - "+ New Session" button opens modal
 - Session list with "Attach" buttons
-- Mobile controls bar (ESC, keyboard, scroll, copy, paste, zoom)
+- Auto-focus terminal when selecting a session
+
+### Desktop Controls
+- Native xterm.js scrolling (mouse wheel, Shift+PageUp/PageDown)
+- Zoom +/- buttons for font size adjustment
+
+### Mobile Controls
+- ESC button (stop Claude thinking)
+- Scroll button (tmux copy mode for touch scrolling)
+- Copy/Paste buttons
+- Zoom +/- buttons
 
 ## Planned Redesign
 
