@@ -400,7 +400,7 @@
             if (!currentSession || !socket) return;
 
             if (isScrollMode) {
-                socket.emit('terminal_input', { data: 'q' });
+                socket.emit('terminal_input', { data: '\x1b' }); // ESC to exit copy mode
                 scrollBtn.classList.remove('active');
                 scrollBtn.querySelector('span').textContent = 'Scroll';
                 scrollOverlay?.classList.remove('visible');
@@ -723,9 +723,13 @@
         });
 
         // Exit any existing copy mode after attaching (fix scroll mode state on refresh)
+        // Use ESC key which exits copy mode without side effects
         setTimeout(() => {
             if (socket && currentSession) {
-                socket.emit('terminal_input', { data: 'q' });
+                // Send ESC twice to exit any nested modes (safer than 'q')
+                socket.emit('terminal_input', { data: '\x1b' }); // ESC
+                setTimeout(() => socket.emit('terminal_input', { data: '\x1b' }), 100);
+
                 // Reset scroll mode UI state
                 isScrollMode = false;
                 const scrollBtn = document.getElementById('btnTmuxScroll');
@@ -736,7 +740,7 @@
                 }
                 scrollOverlay?.classList.remove('visible');
             }
-        }, 100);
+        }, 200);
     }
 
     // Kill session
