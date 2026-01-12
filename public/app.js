@@ -747,6 +747,14 @@
 
         // Auto-focus terminal so user can start typing immediately
         term.focus();
+
+        // Exit any existing tmux copy mode with ESC key
+        // ESC is safe - exits copy mode if active, ignored otherwise
+        setTimeout(() => {
+            if (socket && currentSession) {
+                socket.emit('terminal_input', { data: '\x1b' });
+            }
+        }, 150);
     }
 
     // Kill session
