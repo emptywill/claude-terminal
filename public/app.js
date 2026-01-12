@@ -1,4 +1,22 @@
 // Claude Terminal - Main Application with Multi-Server Support (Sidebar Layout)
+
+// Global function for commands dropdown (must be outside IIFE for onclick)
+function toggleCommandsMenu(e) {
+    e.stopPropagation();
+    var menu = document.getElementById('commandsMenu');
+    var btn = document.getElementById('btnCommands');
+    if (menu && btn) {
+        var isHidden = menu.classList.contains('hidden');
+        if (isHidden) {
+            // Position menu below button
+            var rect = btn.getBoundingClientRect();
+            menu.style.top = (rect.bottom + 5) + 'px';
+            menu.style.left = Math.max(10, rect.left) + 'px';
+        }
+        menu.classList.toggle('hidden');
+    }
+}
+
 (function() {
     let term = null;
     let fitAddon = null;
@@ -543,6 +561,20 @@
             }
         });
 
+        // Commands dropdown - item click handlers
+        const commandsMenu = document.getElementById('commandsMenu');
+        commandsMenu?.querySelectorAll('.command-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const cmd = item.dataset.cmd;
+                if (cmd && socket && currentSession) {
+                    socket.emit('terminal_input', { data: cmd });
+                    term?.focus();
+                }
+                commandsMenu.classList.add('hidden');
+            });
+        });
+
 
         // New window
         document.getElementById('btnNewWindow')?.addEventListener('click', () => {
@@ -678,10 +710,11 @@
             userMenu.classList.toggle('open');
         });
 
-        // Close dropdown when clicking outside
+        // Close dropdowns when clicking outside
         document.addEventListener('click', () => {
             userMenuDropdown?.classList.add('hidden');
             userMenu?.classList.remove('open');
+            document.getElementById('commandsMenu')?.classList.add('hidden');
         });
 
         // Manage servers button (in dropdown)

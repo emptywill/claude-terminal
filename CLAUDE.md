@@ -100,6 +100,8 @@ See "Development Workflow" at top of this file.
 
 ## Recent Changes
 
+- Commands dropdown menu with quick access to Claude Code slash commands
+- Scrollable commands menu (max-height 350px) with organized categories
 - Multiple saved paths per server (dropdown selection when creating sessions)
 - Drag-and-drop session reordering (order persists in localStorage)
 - Removed "Local" server type - all servers now use SSH

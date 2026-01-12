@@ -37,6 +37,7 @@ Work/Hotel ──(VPN)──► Homelab:3000 ──(SSH)──► VPS:22
 
 - **Multi-server SSH management** - Single dashboard for multiple remote servers via SSH
 - **Persistent sessions** - tmux keeps sessions alive 24/7, reconnect anytime from anywhere
+- **Commands menu** - Quick access to Claude Code slash commands (/init, /compact, /review, etc.)
 - **Drag-and-drop session reordering** - Organize sessions your way, order persists across reloads
 - **Multiple saved paths per server** - Quick-select working directories when creating sessions
 - **Claude Code optimized** - Auto-start Claude, mobile-friendly controls
@@ -112,6 +113,7 @@ Adjust the volume mount accordingly.
 | Button | Function |
 |--------|----------|
 | **ESC** | Send ESC key (stop Claude from thinking) |
+| **Commands** | Quick access to Claude Code slash commands |
 | **Scroll** | Enter/exit tmux copy mode for scrolling |
 | **Copy** | Copy selected text |
 | **Paste** | Paste from clipboard |
@@ -178,6 +180,8 @@ server {
 ## Recent Updates
 
 **2026-01-12:**
+- **Commands dropdown menu** - Quick access to Claude Code slash commands with scrollable menu
+- **Organized command categories** - Project, Context Management, Settings, Account, Extensions, Help
 - **Multiple saved paths per server** - Define multiple working directories per server, select from dropdown when creating sessions
 - **Drag-and-drop session reordering** - Reorder sessions in sidebar, order persists in localStorage
 - **Removed Local server type** - All servers now use SSH (cleaner, avoids duplicate sessions)
