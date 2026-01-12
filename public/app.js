@@ -372,10 +372,10 @@
             }
         });
 
-        // Handle Ctrl+V for paste (otherwise it sends ^V to terminal)
-        container.addEventListener('keydown', (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
-                e.preventDefault();
+        // Handle Ctrl+V for paste using xterm's custom key handler
+        // This intercepts before xterm processes the key
+        term.attachCustomKeyEventHandler((e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'v' && e.type === 'keydown') {
                 navigator.clipboard.readText().then((text) => {
                     if (text && socket && socket.connected && currentSession) {
                         socket.emit('terminal_input', { data: text });
@@ -383,7 +383,9 @@
                 }).catch((err) => {
                     console.error('Paste failed:', err);
                 });
+                return false; // Prevent xterm from processing this key
             }
+            return true; // Let xterm handle all other keys
         });
 
         // Disable mobile autocapitalize
