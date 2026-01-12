@@ -8,6 +8,22 @@ Manage persistent terminal sessions across multiple servers from one web dashboa
 ![Node.js](https://img.shields.io/badge/node.js-18-green.svg?style=flat&logo=node.js&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
+## Table of Contents
+
+- [What It Does](#what-it-does)
+- [How It Works](#how-it-works)
+- [Requirements](#requirements)
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Environment Variables](#environment-variables)
+- [Volume Mounts](#volume-mounts)
+- [Controls](#controls)
+- [Android App](#android-app)
+- [Building from Source](#building-from-source)
+- [Security](#security)
+- [Recent Updates](#recent-updates)
+- [License](#license)
+
 ## What It Does
 
 **TL;DR:** Web UI for tmux that works across multiple servers via SSH. Built for Claude Code but works with any terminal application.
