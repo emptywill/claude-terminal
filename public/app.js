@@ -732,6 +732,9 @@
             rows: term.rows
         });
 
+        // Auto-focus terminal so user can start typing immediately
+        term.focus();
+
         // Exit any existing copy mode after attaching (fix scroll mode state on refresh)
         // Use ESC key which exits copy mode without side effects
         setTimeout(() => {
