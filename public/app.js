@@ -735,25 +735,8 @@
         // Auto-focus terminal so user can start typing immediately
         term.focus();
 
-        // Exit any existing copy mode after attaching (fix scroll mode state on refresh)
-        // Use ESC key which exits copy mode without side effects
-        setTimeout(() => {
-            if (socket && currentSession) {
-                // Send ESC twice to exit any nested modes (safer than 'q')
-                socket.emit('terminal_input', { data: '\x1b' }); // ESC
-                setTimeout(() => socket.emit('terminal_input', { data: '\x1b' }), 100);
-
-                // Reset scroll mode UI state
-                isScrollMode = false;
-                const scrollBtn = document.getElementById('btnTmuxScroll');
-                const scrollOverlay = document.getElementById('scrollOverlay');
-                scrollBtn?.classList.remove('active');
-                if (scrollBtn?.querySelector('span')) {
-                    scrollBtn.querySelector('span').textContent = 'Scroll';
-                }
-                scrollOverlay?.classList.remove('visible');
-            }
-        }, 200);
+        // Note: We don't send ESC keys here anymore - it caused "press enter to continue" prompts
+        // Scroll mode UI is reset on page load (initControls), user can re-enable if needed
     }
 
     // Kill session
