@@ -724,6 +724,19 @@
     function attachToSession() {
         if (!socket || !currentSession || !currentServerId) return;
 
+        // Reset scroll mode UI state (important for reconnections after container restart)
+        isScrollMode = false;
+        const scrollBtn = document.getElementById('btnTmuxScroll');
+        const scrollOverlay = document.getElementById('scrollOverlay');
+        if (scrollBtn) {
+            scrollBtn.classList.remove('active');
+            const span = scrollBtn.querySelector('span');
+            if (span) span.textContent = 'Scroll';
+        }
+        if (scrollOverlay) {
+            scrollOverlay.classList.remove('visible');
+        }
+
         term.clear();
         socket.emit('tmux_attach', {
             session: currentSession,
@@ -734,9 +747,6 @@
 
         // Auto-focus terminal so user can start typing immediately
         term.focus();
-
-        // Note: We don't send ESC keys here anymore - it caused "press enter to continue" prompts
-        // Scroll mode UI is reset on page load (initControls), user can re-enable if needed
     }
 
     // Kill session
