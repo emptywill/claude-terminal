@@ -372,6 +372,20 @@
             }
         });
 
+        // Handle Ctrl+V for paste (otherwise it sends ^V to terminal)
+        container.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+                e.preventDefault();
+                navigator.clipboard.readText().then((text) => {
+                    if (text && socket && socket.connected && currentSession) {
+                        socket.emit('terminal_input', { data: text });
+                    }
+                }).catch((err) => {
+                    console.error('Paste failed:', err);
+                });
+            }
+        });
+
         // Disable mobile autocapitalize
         setTimeout(() => {
             const textarea = container.querySelector('.xterm-helper-textarea');
