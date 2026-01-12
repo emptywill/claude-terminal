@@ -14,24 +14,53 @@ Manage persistent terminal sessions across multiple servers from one web dashboa
 
 ## How It Works
 
-Claude Terminal provides a web-based dashboard for managing tmux sessions across multiple servers via SSH:
+```mermaid
+flowchart LR
+    subgraph client ["Your Devices"]
+        Browser["🌐 Browser"]
+        Phone["📱 Phone"]
+    end
 
+    subgraph docker ["Docker Host"]
+        CT["Claude Terminal<br/>:3000"]
+    end
+
+    subgraph servers ["Remote Servers"]
+        subgraph s1 ["VPS"]
+            tmux1["tmux"] --> claude1["Claude Code"]
+        end
+        subgraph s2 ["Homelab"]
+            tmux2["tmux"] --> claude2["Claude Code"]
+        end
+        subgraph s3 ["Dev Server"]
+            tmux3["tmux"] --> claude3["Claude Code"]
+        end
+    end
+
+    Browser --> CT
+    Phone --> CT
+    CT -->|SSH| s1
+    CT -->|SSH| s2
+    CT -->|SSH| s3
 ```
-Browser ──(3000)──► Claude Terminal ──(SSH:22)──► Server 1
-                                    ──(SSH:22)──► Server 2
-                                    ──(SSH:22)──► VPS
-```
+
+**The flow:**
+1. Access Claude Terminal from any browser or phone
+2. Claude Terminal connects to your servers via SSH
+3. tmux keeps sessions alive 24/7 on each server
+4. Reconnect anytime - your Claude session is exactly where you left it
 
 ### Use Cases
 
-**Homelab Gateway:** Run Claude Terminal on your homelab and access servers that only allow SSH from your home IP:
+**Homelab Gateway** - Access servers that only allow SSH from your home IP:
 
-```
-Work/Hotel ──(VPN)──► Homelab:3000 ──(SSH)──► VPS:22
-   (you)            (claude-terminal)     (only allows home IP)
+```mermaid
+flowchart LR
+    You["👤 You<br/>(Work/Hotel)"] -->|VPN| Homelab["🏠 Homelab<br/>Claude Terminal"]
+    Homelab -->|SSH| VPS["☁️ VPS<br/>(Home IP only)"]
 ```
 
-**Multi-Server Dashboard:** Single interface to manage Claude Code sessions across all your servers - VPS, homelab, remote machines.
+**Multi-Server Dashboard** - Single interface for all your servers, VPS, homelab, remote machines.
 
 ## Requirements
 
