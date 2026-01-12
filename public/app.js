@@ -350,17 +350,22 @@
             }
         });
 
-        // Auto-copy on selection (desktop) - copies text when selection is made
-        term.onSelectionChange(() => {
-            if (term.hasSelection()) {
-                const text = term.getSelection();
-                if (text) {
-                    navigator.clipboard.writeText(text).then(() => {
-                        // Brief visual feedback
-                        showToast('Copied to clipboard', 'success', 1500);
-                    }).catch(() => {});
+        // Auto-copy on selection (desktop) - copies text when mouse is released with selection
+        // Use mouseup because onSelectionChange fires after selection is cleared
+        container.addEventListener('mouseup', () => {
+            // Small delay to let xterm.js process the selection first
+            setTimeout(() => {
+                if (term.hasSelection()) {
+                    const text = term.getSelection();
+                    if (text) {
+                        navigator.clipboard.writeText(text).then(() => {
+                            showToast('Copied to clipboard', 'success', 1500);
+                        }).catch((err) => {
+                            console.error('Copy failed:', err);
+                        });
+                    }
                 }
-            }
+            }, 10);
         });
 
         // Disable mobile autocapitalize
@@ -760,14 +765,6 @@
 
         // Auto-focus terminal so user can start typing immediately
         term.focus();
-
-        // Exit any existing tmux copy mode with ESC key
-        // ESC is safe - exits copy mode if active, ignored otherwise
-        setTimeout(() => {
-            if (socket && currentSession) {
-                socket.emit('terminal_input', { data: '\x1b' });
-            }
-        }, 150);
     }
 
     // Kill session
