@@ -343,16 +343,23 @@
             }
         });
 
-        // Send input to server (filter out mouse events when selecting)
+        // Send input to server
         term.onData((data) => {
             if (socket && socket.connected && currentSession) {
-                // Don't send mouse events if user has text selected (allows copy)
-                // Mouse events start with ESC [ M or ESC [ <
-                const isMouseEvent = data.startsWith('\x1b[M') || data.startsWith('\x1b[<');
-                if (isMouseEvent && term.hasSelection()) {
-                    return; // Don't send mouse release to tmux, keep selection
-                }
                 socket.emit('terminal_input', { data });
+            }
+        });
+
+        // Auto-copy on selection (desktop) - copies text when selection is made
+        term.onSelectionChange(() => {
+            if (term.hasSelection()) {
+                const text = term.getSelection();
+                if (text) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        // Brief visual feedback
+                        showToast('Copied to clipboard', 'success', 1500);
+                    }).catch(() => {});
+                }
             }
         });
 
