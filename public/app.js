@@ -376,6 +376,7 @@
         // This intercepts before xterm processes the key
         term.attachCustomKeyEventHandler((e) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'v' && e.type === 'keydown') {
+                e.preventDefault(); // Stop browser default paste
                 navigator.clipboard.readText().then((text) => {
                     if (text && socket && socket.connected && currentSession) {
                         socket.emit('terminal_input', { data: text });
