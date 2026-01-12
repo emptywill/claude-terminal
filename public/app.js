@@ -171,7 +171,7 @@
         const modalSelect = document.getElementById('sessionServer');
         if (modalSelect) {
             modalSelect.innerHTML = servers.map(s =>
-                `<option value="${s.id}" ${s.id === currentServerId ? 'selected' : ''}>${s.name}${s.authType !== 'local' ? ' (' + s.host + ')' : ''}</option>`
+                `<option value="${s.id}" ${s.id === currentServerId ? 'selected' : ''}>${s.name} (${s.host})</option>`
             ).join('');
         }
 
@@ -197,6 +197,7 @@
 
     async function loadSessions() {
         sessions = [];
+        const seen = new Set(); // Track unique sessions to prevent duplicates
 
         // Load sessions from all servers
         for (const server of servers) {
@@ -205,13 +206,17 @@
                 if (response.ok) {
                     const data = await response.json();
                     if (Array.isArray(data)) {
-                        // Add server info to each session
+                        // Add server info to each session (with deduplication)
                         data.forEach(s => {
-                            s.serverId = server.id;
-                            s.serverName = server.name;
-                            s.serverType = server.authType;
+                            const key = `${server.id}:${s.name}`;
+                            if (!seen.has(key)) {
+                                seen.add(key);
+                                s.serverId = server.id;
+                                s.serverName = server.name;
+                                s.serverType = server.authType;
+                                sessions.push(s);
+                            }
                         });
-                        sessions.push(...data);
                     }
                 }
             } catch (error) {
@@ -219,7 +224,110 @@
             }
         }
 
+        // Apply saved session order
+        const savedOrder = getSessionOrder();
+        if (savedOrder.length > 0) {
+            sessions.sort((a, b) => {
+                const keyA = `${a.serverId}:${a.name}`;
+                const keyB = `${b.serverId}:${b.name}`;
+                const indexA = savedOrder.indexOf(keyA);
+                const indexB = savedOrder.indexOf(keyB);
+                // Sessions not in saved order go to the end
+                if (indexA === -1 && indexB === -1) return 0;
+                if (indexA === -1) return 1;
+                if (indexB === -1) return -1;
+                return indexA - indexB;
+            });
+        }
+
         updateSessionList();
+    }
+
+    // Session order persistence
+    function getSessionOrder() {
+        try {
+            return JSON.parse(localStorage.getItem('sessionOrder') || '[]');
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function saveSessionOrder() {
+        const order = sessions.map(s => `${s.serverId}:${s.name}`);
+        localStorage.setItem('sessionOrder', JSON.stringify(order));
+    }
+
+    // Drag and drop for session reordering
+    let draggedItem = null;
+    let draggedIndex = null;
+
+    function setupSessionDragDrop(list) {
+        const items = list.querySelectorAll('.session-item[draggable="true"]');
+
+        items.forEach(item => {
+            item.addEventListener('dragstart', (e) => {
+                draggedItem = item;
+                draggedIndex = parseInt(item.dataset.index);
+                item.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', item.dataset.index);
+            });
+
+            item.addEventListener('dragend', () => {
+                if (draggedItem) {
+                    draggedItem.classList.remove('dragging');
+                }
+                draggedItem = null;
+                draggedIndex = null;
+                // Remove all drop indicators
+                list.querySelectorAll('.session-item').forEach(i => {
+                    i.classList.remove('drag-over', 'drag-over-top', 'drag-over-bottom');
+                });
+            });
+
+            item.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+
+                if (!draggedItem || item === draggedItem) return;
+
+                const rect = item.getBoundingClientRect();
+                const midY = rect.top + rect.height / 2;
+
+                // Show drop indicator
+                item.classList.remove('drag-over-top', 'drag-over-bottom');
+                if (e.clientY < midY) {
+                    item.classList.add('drag-over-top');
+                } else {
+                    item.classList.add('drag-over-bottom');
+                }
+            });
+
+            item.addEventListener('dragleave', () => {
+                item.classList.remove('drag-over', 'drag-over-top', 'drag-over-bottom');
+            });
+
+            item.addEventListener('drop', (e) => {
+                e.preventDefault();
+
+                if (!draggedItem || item === draggedItem) return;
+
+                const targetIndex = parseInt(item.dataset.index);
+                const rect = item.getBoundingClientRect();
+                const midY = rect.top + rect.height / 2;
+                const insertBefore = e.clientY < midY;
+
+                // Reorder the sessions array
+                const movedSession = sessions.splice(draggedIndex, 1)[0];
+                let newIndex = insertBefore ? targetIndex : targetIndex + 1;
+                if (draggedIndex < targetIndex) newIndex--;
+                sessions.splice(newIndex, 0, movedSession);
+
+                // Save new order and re-render
+                saveSessionOrder();
+                updateSessionList();
+            });
+        });
     }
 
     function updateSessionList() {
@@ -234,18 +342,22 @@
         list.innerHTML = sessions.map((s, i) => {
             const isActive = s.name === currentSession && s.serverId === currentServerId;
             return `
-            <div class="session-item stagger-item ${isActive ? 'active' : ''}" data-session="${s.name}" data-server="${s.serverId}" style="animation-delay: ${i * 0.05}s">
+            <div class="session-item stagger-item ${isActive ? 'active' : ''}" data-session="${s.name}" data-server="${s.serverId}" data-index="${i}" draggable="true" style="animation-delay: ${i * 0.05}s">
                 <div class="session-item-header">
+                    <span class="drag-handle" title="Drag to reorder">⋮⋮</span>
                     <span class="session-name">${s.name}</span>
                     <div class="session-item-right">
                         <span class="session-status" style="background: ${isActive ? 'var(--success)' : 'var(--accent-primary)'}"></span>
                         <span class="session-close" data-session="${s.name}" data-server="${s.serverId}" title="End session">&times;</span>
                     </div>
                 </div>
-                <div class="session-meta">${s.serverType === 'local' ? '● Local' : '○ ' + s.serverName} · ${s.windows} win</div>
+                <div class="session-meta">${s.serverName} · ${s.windows} win</div>
             </div>
         `;
         }).join('');
+
+        // Setup drag and drop
+        setupSessionDragDrop(list);
 
         // Click handlers for session items
         list.querySelectorAll('.session-item').forEach(item => {
@@ -1063,18 +1175,16 @@
         list.innerHTML = servers.map(s => `
             <div class="server-item ${s.id === currentServerId ? 'active' : ''}" data-server="${s.id}">
                 <div class="server-item-main">
-                    <div class="server-item-icon" style="color: ${s.authType === 'local' ? 'var(--success)' : 'var(--accent-primary)'}">●</div>
+                    <div class="server-item-icon" style="color: var(--accent-primary)">●</div>
                     <div class="server-item-info">
                         <div class="server-item-name">${s.name}</div>
-                        <div class="server-item-details">${s.authType === 'local' ? 'Local tmux' : s.username + '@' + s.host + ':' + s.port}</div>
+                        <div class="server-item-details">${s.username}@${s.host}:${s.port}</div>
                     </div>
                 </div>
                 <div class="server-item-actions">
                     ${s.isDefault ? '<span class="default-badge">Default</span>' : `<button class="btn btn-sm" onclick="setDefaultServer('${s.id}')">Set Default</button>`}
-                    ${s.authType !== 'local' ? `
-                        <button class="btn btn-sm" onclick="editServer('${s.id}')">Edit</button>
-                        <button class="btn btn-sm danger" onclick="deleteServer('${s.id}')">Delete</button>
-                    ` : ''}
+                    <button class="btn btn-sm" onclick="editServer('${s.id}')">Edit</button>
+                    <button class="btn btn-sm danger" onclick="deleteServer('${s.id}')">Delete</button>
                 </div>
             </div>
         `).join('');

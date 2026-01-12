@@ -78,21 +78,11 @@ function saveUsers(users) {
     fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
 }
 
-// Initialize servers file with localhost as default
+// Initialize servers file (empty by default - user adds SSH servers)
 function initializeServers() {
     if (!fs.existsSync(SERVERS_FILE)) {
-        const defaultServers = [{
-            id: 'local',
-            name: 'Localhost',
-            host: 'localhost',
-            port: 22,
-            username: 'root',
-            authType: 'local', // 'local' means use local tmux socket, not SSH
-            isDefault: true,
-            createdAt: new Date().toISOString()
-        }];
-        fs.writeFileSync(SERVERS_FILE, JSON.stringify(defaultServers, null, 2));
-        console.log('Created default servers configuration with localhost');
+        fs.writeFileSync(SERVERS_FILE, JSON.stringify([], null, 2));
+        console.log('Created empty servers configuration - add SSH servers to get started');
     }
 }
 
@@ -341,11 +331,6 @@ app.delete('/api/servers/:id', (req, res) => {
 
     if (serverIndex === -1) {
         return res.status(404).json({ error: 'Server not found' });
-    }
-
-    // Don't allow deleting the local server
-    if (servers[serverIndex].authType === 'local') {
-        return res.status(400).json({ error: 'Cannot delete the localhost server' });
     }
 
     servers.splice(serverIndex, 1);

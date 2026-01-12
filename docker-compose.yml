@@ -1,8 +1,6 @@
 services:
   claude-terminal:
     image: ghcr.io/emptywill/claude-terminal:latest
-    # To build locally instead, comment above and uncomment:
-    # build: .
     container_name: claude-terminal
     environment:
       - PORT=3000
@@ -10,8 +8,10 @@ services:
       - DEFAULT_USER=admin
       - DEFAULT_PASS=admin
     ports:
-      - "3000:3000"
+      # IMPORTANT: Keep external port as 3550 - do not change!
+      - "3550:3000"
     volumes:
       - /tmp/tmux-0:/tmp/tmux-0  # Host tmux socket (root user)
       - ./data:/app/data         # Persist user credentials
+      - ./public:/app/public     # Mount local public folder for development
     restart: unless-stopped
