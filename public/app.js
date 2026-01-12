@@ -405,10 +405,7 @@
             setTimeout(loadWindows, 600);
         });
 
-        // Scroll mode
-        const scrollBtn = document.getElementById('btnTmuxScroll');
-        const scrollOverlay = document.getElementById('scrollOverlay');
-
+        // Scroll mode (scrollBtn and scrollOverlay already declared at top of function)
         scrollBtn?.addEventListener('click', () => {
             if (!currentSession || !socket) return;
 
