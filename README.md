@@ -55,7 +55,33 @@ Work/Hotel ──(VPN)──► Homelab:3000 ──(SSH)──► VPS:22
 
 ## Quick Start
 
-### Docker Compose
+### 1. Install tmux on your remote servers
+
+On each server you want to connect to:
+
+```bash
+# Debian/Ubuntu
+sudo apt install tmux
+
+# RHEL/CentOS/Fedora
+sudo dnf install tmux
+
+# macOS
+brew install tmux
+```
+
+### 2. Generate a session secret
+
+The session secret is used to sign login cookies. Without a consistent secret, you'll be logged out when the container restarts.
+
+```bash
+# Generate a random 64-character hex string
+openssl rand -hex 32
+```
+
+Save this value - you'll need it in the next step.
+
+### 3. Create docker-compose.yml
 
 ```yaml
 services:
@@ -63,9 +89,9 @@ services:
     image: ghcr.io/emptywill/claude-terminal:latest
     container_name: claude-terminal
     environment:
-      - SESSION_SECRET=your-random-secret-here
+      - SESSION_SECRET=your-generated-secret-here
       - DEFAULT_USER=admin
-      - DEFAULT_PASS=your-secure-password
+      - DEFAULT_PASS=change-this-password
     ports:
       - "3000:3000"
     volumes:
@@ -73,11 +99,41 @@ services:
     restart: unless-stopped
 ```
 
+Replace:
+- `your-generated-secret-here` with the secret from step 2
+- `change-this-password` with a secure password
+
+### 4. Start the container
+
 ```bash
 docker compose up -d
 ```
 
-Then open `http://your-server:3000` in your browser.
+### 5. Access the web UI
+
+Open `http://your-server:3000` in your browser and log in with your credentials.
+
+### 6. Add your first server
+
+1. Click your username (top right) → **Manage Servers**
+2. Click **Add Server**
+3. Enter your server details:
+   - **Name**: A friendly name (e.g., "My VPS")
+   - **Host**: Server IP or hostname
+   - **Port**: SSH port (usually 22)
+   - **Username**: Your SSH username
+   - **Password** or **SSH Key**: Your authentication method
+   - **Saved Paths**: Working directories (e.g., `/home/user/projects`)
+4. Click **Save**
+
+### 7. Create a session
+
+1. Click **+ New Session** in the sidebar
+2. Select your server and choose a saved path
+3. Optionally enable "Start Claude Code" to auto-launch Claude CLI
+4. Click **Create**
+
+You're now connected to a persistent tmux session on your remote server.
 
 ## Environment Variables
 
