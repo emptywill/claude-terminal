@@ -432,6 +432,51 @@ function toggleCommandsMenu(e) {
         }
     }
 
+    // Helper function to copy text with fallback for Brave/strict browsers
+    function copyToClipboard(text) {
+        // Try modern Clipboard API first
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text)
+                .then(() => {
+                    showToast('Copied to clipboard', 'success', 1500);
+                    return true;
+                })
+                .catch((err) => {
+                    console.warn('Clipboard API failed, trying fallback:', err);
+                    return fallbackCopy(text);
+                });
+        } else {
+            return fallbackCopy(text);
+        }
+    }
+
+    // Fallback copy method for browsers with strict clipboard policies (Brave)
+    function fallbackCopy(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        textarea.style.pointerEvents = 'none';
+        document.body.appendChild(textarea);
+        textarea.select();
+
+        try {
+            const successful = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            if (successful) {
+                showToast('Copied to clipboard', 'success', 1500);
+                return Promise.resolve(true);
+            } else {
+                console.error('execCommand copy failed');
+                return Promise.resolve(false);
+            }
+        } catch (err) {
+            console.error('Fallback copy failed:', err);
+            document.body.removeChild(textarea);
+            return Promise.resolve(false);
+        }
+    }
+
     // Initialize terminal
     function initTerminal() {
         if (term) return;
@@ -493,28 +538,27 @@ function toggleCommandsMenu(e) {
         // Copy on mouse release if we captured a selection
         container.addEventListener('mouseup', () => {
             if (lastSelection) {
-                navigator.clipboard.writeText(lastSelection).then(() => {
-                    showToast('Copied to clipboard', 'success', 1500);
-                }).catch((err) => {
-                    console.error('Copy failed:', err);
-                });
+                copyToClipboard(lastSelection);
                 lastSelection = '';
             }
         });
 
-        // Handle Ctrl+V for paste using xterm's custom key handler
+        // Handle paste event (works better with Brave's clipboard permissions)
+        container.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const text = e.clipboardData?.getData('text');
+            if (text && socket && socket.connected && currentSession) {
+                socket.emit('terminal_input', { data: text });
+            }
+        });
+
+        // Handle Ctrl+V for paste using xterm's custom key handler (fallback)
         // This intercepts before xterm processes the key
         term.attachCustomKeyEventHandler((e) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'v' && e.type === 'keydown') {
-                e.preventDefault(); // Stop browser default paste
-                navigator.clipboard.readText().then((text) => {
-                    if (text && socket && socket.connected && currentSession) {
-                        socket.emit('terminal_input', { data: text });
-                    }
-                }).catch((err) => {
-                    console.error('Paste failed:', err);
-                });
-                return false; // Prevent xterm from processing this key
+                // Let the paste event handle it (above listener)
+                // Don't prevent default - allow paste event to fire
+                return false; // Don't let xterm process this
             }
             return true; // Let xterm handle all other keys
         });
@@ -625,14 +669,10 @@ function toggleCommandsMenu(e) {
         document.getElementById('btnScrollDown')?.addEventListener('click', () => sendScrollKeys('down', 12));
 
         // Copy
-        document.getElementById('btnTmuxCopy')?.addEventListener('click', async () => {
+        document.getElementById('btnTmuxCopy')?.addEventListener('click', () => {
             if (term && term.hasSelection()) {
                 const text = term.getSelection();
-                try {
-                    await navigator.clipboard.writeText(text);
-                } catch (e) {
-                    console.error('Copy failed:', e);
-                }
+                copyToClipboard(text);
             }
         });
 
@@ -642,9 +682,12 @@ function toggleCommandsMenu(e) {
                 const text = await navigator.clipboard.readText();
                 if (text && currentSession && socket) {
                     socket.emit('terminal_input', { data: text });
+                    showToast('Pasted from clipboard', 'success', 1500);
                 }
             } catch (e) {
                 console.error('Paste failed:', e);
+                // Brave requires clipboard permission - show helpful message
+                showToast('Paste failed. Try using Ctrl+V instead, or enable clipboard permissions for this site.', 'warning', 4000);
             }
         });
 
@@ -1016,7 +1059,8 @@ function toggleCommandsMenu(e) {
     function updateSessionDirFromServer() {
         const serverSelect = document.getElementById('sessionServer');
         const dirInput = document.getElementById('newSessionDir');
-        const pathsDropdown = document.getElementById('savedPathsDropdown');
+        const pathsButtonsContainer = document.getElementById('savedPathsButtons');
+        const pathsContainer = document.getElementById('savedPathsContainer');
 
         if (serverSelect && dirInput) {
             const server = servers.find(s => s.id === serverSelect.value);
@@ -1025,10 +1069,17 @@ function toggleCommandsMenu(e) {
             // Set the first saved path as default
             dirInput.value = savedPaths[0] || '/root';
 
-            // Populate the dropdown
-            if (pathsDropdown) {
-                pathsDropdown.innerHTML = '<option value="">-- Saved Paths --</option>' +
-                    savedPaths.map(p => `<option value="${p}">${p}</option>`).join('');
+            // Populate saved paths as clickable buttons
+            if (pathsButtonsContainer && pathsContainer) {
+                if (savedPaths.length > 0) {
+                    pathsButtonsContainer.innerHTML = savedPaths.map(path =>
+                        `<button type="button" class="saved-path-btn" onclick="selectSavedPath('${path}')">${path}</button>`
+                    ).join('');
+                    pathsContainer.classList.remove('hidden');
+                } else {
+                    pathsButtonsContainer.innerHTML = '';
+                    pathsContainer.classList.add('hidden');
+                }
             }
         }
     }
@@ -1036,6 +1087,7 @@ function toggleCommandsMenu(e) {
     window.selectSavedPath = function(path) {
         if (path) {
             document.getElementById('newSessionDir').value = path;
+            document.getElementById('newSessionDir').focus();
         }
     };
 

@@ -532,10 +532,10 @@ app.post('/api/servers/:id/sessions', (req, res) => {
     let tmuxCmd;
     if (command && (command.includes('&&') || command.includes('||') || command.includes(';'))) {
         const escapedCmd = command.replace(/'/g, "'\\''");
-        tmuxCmd = `tmux new-session -d -s "${name}" bash -c '${escapedCmd}; exec bash'`;
+        tmuxCmd = `tmux new-session -d -s "${name}" bash -c '${escapedCmd}; exec bash' && tmux set-option -t "${name}" mouse on`;
     } else {
         const cmd = command || 'bash';
-        tmuxCmd = `tmux new-session -d -s "${name}" "${cmd}"`;
+        tmuxCmd = `tmux new-session -d -s "${name}" "${cmd}" && tmux set-option -t "${name}" mouse on`;
     }
 
     if (server.authType === 'local') {
@@ -868,10 +868,10 @@ app.post('/api/tmux/create', (req, res) => {
     let tmuxCmd;
     if (command && (command.includes('&&') || command.includes('||') || command.includes(';'))) {
         const escapedCmd = command.replace(/'/g, "'\\''");
-        tmuxCmd = `tmux new-session -d -s "${name}" bash -c '${escapedCmd}; exec bash'`;
+        tmuxCmd = `tmux new-session -d -s "${name}" bash -c '${escapedCmd}; exec bash' && tmux set-option -t "${name}" mouse on`;
     } else {
         const cmd = command || 'bash';
-        tmuxCmd = `tmux new-session -d -s "${name}" "${cmd}"`;
+        tmuxCmd = `tmux new-session -d -s "${name}" "${cmd}" && tmux set-option -t "${name}" mouse on`;
     }
 
     exec(tmuxCmd, (error) => {
@@ -1051,6 +1051,9 @@ function attachRemoteTmux(socket, server, session, cols, rows) {
                 conn.end();
                 socket.emit('terminal_error', { message: 'SSH connection closed' });
             });
+
+            // Enable tmux mouse mode before attaching (for proper scrolling)
+            stream.write(`tmux set-option -t "${session}" mouse on 2>/dev/null || true\n`);
 
             // Attach to tmux session
             stream.write(`tmux attach-session -t "${session}"\n`);

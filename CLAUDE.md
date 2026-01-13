@@ -10,6 +10,25 @@ This file provides guidance to Claude Code when working with this repository.
 - **Image:** `claude-terminal:local` (built locally)
 - **Public folder mounted** - Frontend edits don't need rebuild
 
+## Server Infrastructure
+
+This project runs on a Proxmox LXC homelab (CT 100, Ubuntu 22.04, IP: 192.168.0.61) managing 80+ Docker containers via Arcane orchestration.
+
+**This Project (claude-console):**
+- Arcane project folder: `/srv/containers/arcane-data/projects/claude-console/`
+- Dev/source folder: `/srv/containers/claude-terminal/`
+- Docker image: `claude-terminal:local` (built locally)
+- Port: 3550
+- Network: `homelab-net` (external)
+- Deployment: Managed by Arcane (port 3552)
+
+**Key Commands:**
+- Rebuild after backend changes: `docker build -t claude-terminal:local . && cd /srv/containers/arcane-data/projects/claude-console && docker compose up -d --force-recreate`
+- Frontend changes: Edit `/srv/containers/claude-terminal/public/` (mounted, no rebuild needed)
+- Validate JS: `docker exec claude-terminal node -c "require('./public/app.js')"`
+
+**Full homelab docs:** `/srv/containers/homelab-v2/CLAUDE.md` (read if you need infrastructure details)
+
 ## Development Workflow
 
 ```bash
@@ -91,8 +110,8 @@ For remote servers - sessions run on the remote machine with full access to its 
 
 ### Desktop
 - **Mouse wheel** - Scroll (native xterm.js)
-- **Shift+Select** - Auto-copies to clipboard
-- **Ctrl+V** - Paste from clipboard
+- **Shift+Select** - Auto-copies to clipboard (with Brave/strict browser fallback)
+- **Ctrl+V** - Paste from clipboard (works in Chrome, Firefox, and Brave)
 - **Commands** - Quick access to Claude Code slash commands
 - **Zoom +/-** - Font size
 
@@ -103,21 +122,36 @@ For remote servers - sessions run on the remote machine with full access to its 
 - **Copy/Paste** - Clipboard buttons
 - **Zoom +/-** - Font size
 
+### Browser Compatibility
+- **Chrome/Firefox** - Full clipboard API support
+- **Brave** - Auto-copy and paste use fallback methods (execCommand for copy, paste event for Ctrl+V)
+- All clipboard operations include fallbacks for strict security policies
+
 ## Development
 
 See "Development Workflow" at top of this file.
 
 ## Recent Changes
 
+### UI/UX Improvements
+- **Improved working directory UI** - Saved paths now displayed as clickable buttons below input field (more intuitive than dropdown)
+- **Path selector label** - Discrete "Saved paths:" label to indicate server-specific quick paths
 - Commands dropdown menu with quick access to Claude Code slash commands
 - Scrollable commands menu (max-height 350px) with organized categories
-- Multiple saved paths per server (dropdown selection when creating sessions)
 - Drag-and-drop session reordering (order persists in localStorage)
+
+### Clipboard & Browser Compatibility
+- **Brave browser support** - Auto-copy and paste now work in Brave
+- **Clipboard fallback** - Uses execCommand fallback when Clipboard API fails (strict security policies)
+- **Paste event handling** - Ctrl+V uses native paste event for better Brave compatibility
+- Auto-copy on Shift+select (bypasses tmux mouse)
+
+### Technical
+- **Consistent tmux mouse mode** - Explicitly enables mouse mode for all sessions (local and remote) to ensure consistent scrolling behavior across all servers
+- Multiple saved paths per server (displayed as buttons when creating sessions)
 - Removed "Local" server type - all servers now use SSH
 - Session deduplication to prevent duplicates in menu
 - Desktop scrolling via native xterm.js (mouse wheel)
-- Auto-copy on Shift+select (bypasses tmux mouse)
-- Ctrl+V paste (xterm custom key handler)
 - SIGKILL for PTY cleanup (prevents Claude interruption on restart)
 
 ## Android App

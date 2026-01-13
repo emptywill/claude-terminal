@@ -73,9 +73,10 @@ You (Work/Hotel) ──► VPN ──► Homelab:3000 ──► SSH ──► VP
 - **Persistent sessions** - tmux keeps sessions alive 24/7, reconnect anytime from anywhere
 - **Commands menu** - Quick access to Claude Code slash commands (/init, /compact, /review, etc.)
 - **Drag-and-drop session reordering** - Organize sessions your way, order persists across reloads
-- **Multiple saved paths per server** - Quick-select working directories when creating sessions
+- **Multiple saved paths per server** - Quick-select working directories when creating sessions (displayed as buttons)
 - **Claude Code optimized** - Auto-start Claude, mobile-friendly controls
 - **Mobile-ready** - Touch controls for ESC (stop Claude thinking), scroll, copy/paste, zoom
+- **Browser compatible** - Works in Chrome, Firefox, and Brave (with clipboard fallbacks)
 - **Toast notifications** - All feedback via themed notifications (success, error, warning, info)
 - **Instant operations** - Session deletion <200ms, real-time terminal via Socket.IO
 - **Secure** - Session-based auth with bcrypt, SSH key support, file-based persistence
@@ -183,8 +184,8 @@ You're now connected to a persistent tmux session on your remote server.
 ### Desktop
 - **Mouse wheel** - Scroll through terminal history (native xterm.js scrolling)
 - **Shift+PageUp/PageDown** - Scroll larger amounts
-- **Shift+Select text** - Auto-copies to clipboard on release (Shift bypasses tmux mouse mode)
-- **Ctrl+V** - Paste from clipboard
+- **Shift+Select text** - Auto-copies to clipboard on release (works in Chrome, Firefox, and Brave)
+- **Ctrl+V** - Paste from clipboard (all browsers with fallback support)
 - **Zoom +/-** buttons - Adjust font size
 
 ### Mobile
@@ -199,6 +200,11 @@ You're now connected to a persistent tmux session on your remote server.
 | **+ Win** | Create new tmux window |
 | **Next** | Switch to next window |
 | **End** | Kill current session |
+
+### Browser Compatibility
+- **Chrome/Firefox** - Full native Clipboard API support
+- **Brave** - Auto-copy and paste use fallback methods (execCommand for copy, paste event for Ctrl+V)
+- All clipboard operations work across browsers with automatic fallbacks for strict security policies
 
 ## Android App
 
@@ -257,16 +263,22 @@ server {
 
 ## Recent Updates
 
+**2026-01-13:**
+- **Consistent tmux scrolling** - Mouse mode now explicitly enabled for all sessions to ensure consistent scrolling behavior across servers
+
 **2026-01-12:**
+- **Brave browser clipboard support** - Auto-copy and Ctrl+V paste now work in Brave with fallback methods
+- **Improved working directory UI** - Saved paths displayed as clickable buttons (more intuitive than dropdown)
+- **Clipboard fallbacks** - Uses execCommand and paste events for strict browser security policies
 - **Commands dropdown menu** - Quick access to Claude Code slash commands with scrollable menu
 - **Organized command categories** - Project, Context Management, Settings, Account, Extensions, Help
-- **Multiple saved paths per server** - Define multiple working directories per server, select from dropdown when creating sessions
+- **Multiple saved paths per server** - Define multiple working directories per server, quick-select when creating sessions
 - **Drag-and-drop session reordering** - Reorder sessions in sidebar, order persists in localStorage
 - **Removed Local server type** - All servers now use SSH (cleaner, avoids duplicate sessions)
 - **Session deduplication** - Prevents same session appearing twice in menu
 - **Desktop scrolling** - Native xterm.js scrolling (mouse wheel, Shift+PageUp/Down)
-- **Auto-copy on Shift+select** - Text copied to clipboard when Shift+selecting
-- **Ctrl+V paste** - Paste from clipboard with Ctrl+V
+- **Auto-copy on Shift+select** - Text copied to clipboard when Shift+selecting (Chrome, Firefox, Brave)
+- **Ctrl+V paste** - Paste from clipboard with Ctrl+V (works in all browsers)
 - **Auto-focus terminal** - Terminal focuses when selecting a session
 
 **2026-01-10:**

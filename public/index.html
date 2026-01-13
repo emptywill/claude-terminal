@@ -249,13 +249,13 @@
                 </div>
                 <div class="form-group">
                     <label for="newSessionDir">Working Directory</label>
-                    <div class="path-selector">
-                        <select id="savedPathsDropdown" class="form-select" onchange="selectSavedPath(this.value)">
-                            <option value="">-- Saved Paths --</option>
-                        </select>
-                        <input type="text" id="newSessionDir" class="form-input" placeholder="/root" value="/root">
+                    <input type="text" id="newSessionDir" class="form-input" placeholder="/root" value="/root">
+                    <div id="savedPathsContainer" class="saved-paths-container hidden">
+                        <div class="saved-paths-label">Saved paths:</div>
+                        <div id="savedPathsButtons" class="saved-paths-buttons">
+                            <!-- Populated dynamically with saved paths -->
+                        </div>
                     </div>
-                    <div class="form-hint">Select from saved paths or enter custom path</div>
                 </div>
                 <div class="form-group checkbox-group">
                     <label>
