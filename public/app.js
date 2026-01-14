@@ -228,21 +228,39 @@ function toggleCommandsMenu(e) {
         }
     }
 
-    function updateCWDDisplay(cwd) {
-        const container = document.querySelector('.session-cwd-container');
-        const pathElement = document.querySelector('.session-cwd-path');
+    function updateSessionTooltip(cwd) {
+        const sessionNameEl = document.getElementById('currentSessionName');
+        if (!sessionNameEl) return;
 
-        if (!container || !pathElement) {
-            console.warn('CWD display elements not found');
+        // Find current session data
+        const session = sessions.find(s => s.name === currentSession && s.serverId === currentServerId);
+        const server = servers.find(s => s.id === currentServerId);
+
+        if (!session || !server) {
+            sessionNameEl.removeAttribute('data-tooltip');
             return;
         }
 
+        // Build tooltip content
+        let tooltip = '';
+
         if (cwd) {
-            pathElement.textContent = cwd;
-            container.style.display = 'flex';
-        } else {
-            container.style.display = 'none';
+            tooltip += `📁 ${cwd}\n`;
         }
+
+        tooltip += `🖥️  ${server.name} (${server.host})`;
+
+        if (session.windows) {
+            tooltip += `\n🪟 ${session.windows} window${session.windows !== 1 ? 's' : ''}`;
+        }
+
+        if (session.createdDate) {
+            const date = new Date(session.createdDate);
+            const timeStr = date.toLocaleString();
+            tooltip += `\n🕐 Created ${timeStr}`;
+        }
+
+        sessionNameEl.setAttribute('data-tooltip', tooltip);
     }
 
     // ===== SESSION MANAGEMENT =====
@@ -982,9 +1000,9 @@ function toggleCommandsMenu(e) {
         updateSessionList();
         updateServerInfo();
 
-        // Fetch and display current working directory
+        // Fetch and update session tooltip with CWD and other info
         const cwd = await fetchCurrentWorkingDirectory(serverId, sessionName);
-        updateCWDDisplay(cwd);
+        updateSessionTooltip(cwd);
 
         loadWindows();
         document.getElementById('currentSessionName').textContent = sessionName;
