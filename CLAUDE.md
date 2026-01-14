@@ -106,6 +106,31 @@ For full access to host directories and Claude CLI, configure SSH to your host m
 ### Remote SSH
 For remote servers - sessions run on the remote machine with full access to its filesystem.
 
+## Sudo Configuration (for non-root users)
+
+When running as a non-root user on remote servers, sudo password prompts can interrupt workflow. Configure passwordless sudo on your target servers:
+
+**Option 1: Passwordless sudo for all commands (easiest)**
+```bash
+echo 'username ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/username
+sudo chmod 0440 /etc/sudoers.d/username
+```
+
+**Option 2: Passwordless sudo for specific commands (more secure)**
+```bash
+# Example: docker, systemctl, apt only
+echo 'username ALL=(ALL) NOPASSWD: /usr/bin/docker, /usr/bin/systemctl, /usr/bin/apt' | sudo tee /etc/sudoers.d/username
+sudo chmod 0440 /etc/sudoers.d/username
+```
+
+**Option 3: Extend sudo timeout (middle ground)**
+```bash
+echo 'Defaults timestamp_timeout=60' | sudo tee -a /etc/sudoers.d/timeout
+sudo chmod 0440 /etc/sudoers.d/timeout
+```
+
+Replace `username` with your actual SSH username on the target server.
+
 ## Controls
 
 ### Desktop
