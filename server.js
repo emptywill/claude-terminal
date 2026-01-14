@@ -624,6 +624,94 @@ app.post('/api/servers/:id/sessions', (req, res) => {
     }
 });
 
+// Get current working directory from a tmux session
+app.get('/api/servers/:id/sessions/:session/cwd', (req, res) => {
+    const { id, session } = req.params;
+
+    const servers = getServers();
+    const server = servers.find(s => s.id === id);
+
+    if (!server) {
+        return res.status(404).json({ error: 'Server not found' });
+    }
+
+    const tmuxCmd = `tmux list-panes -t "${session}" -F "#{pane_current_path}"`;
+
+    const conn = new Client();
+    let responded = false;
+
+    const respond = (success, data = null, error = null) => {
+        if (responded) return;
+        responded = true;
+        conn.end();
+        if (error) {
+            res.status(500).json({ error });
+        } else {
+            res.json(data);
+        }
+    };
+
+    // Set timeout for SSH connection
+    const timeout = setTimeout(() => {
+        respond(false, null, 'Connection timeout');
+    }, 5000);
+
+    conn.on('ready', () => {
+        clearTimeout(timeout);
+        conn.exec(tmuxCmd, (err, stream) => {
+            if (err) {
+                return respond(false, null, err.message);
+            }
+
+            let stdout = '';
+            let stderr = '';
+
+            stream.on('data', (data) => {
+                stdout += data.toString();
+            });
+
+            stream.stderr.on('data', (data) => {
+                stderr += data.toString();
+            });
+
+            stream.on('close', (code) => {
+                if (code === 0 && stdout.trim()) {
+                    // Get first line (active pane's CWD)
+                    const cwd = stdout.trim().split('\n')[0];
+                    respond(true, { cwd });
+                } else {
+                    respond(false, null, stderr || 'Could not retrieve working directory');
+                }
+            });
+        });
+    });
+
+    conn.on('error', (err) => {
+        clearTimeout(timeout);
+        respond(false, null, err.message);
+    });
+
+    // Connect to SSH server
+    const connectConfig = {
+        host: server.host,
+        port: server.port || 22,
+        username: server.username,
+        readyTimeout: 5000,
+        keepaliveInterval: 10000,
+        algorithms: {
+            cipher: ['aes128-gcm', 'aes128-ctr', 'aes256-ctr']
+        }
+    };
+
+    if (server.authType === 'password') {
+        connectConfig.password = server.password;
+    } else if (server.authType === 'key') {
+        connectConfig.privateKey = server.privateKey;
+    }
+
+    conn.connect(connectConfig);
+});
+
 // Kill tmux session on a server
 app.delete('/api/servers/:id/sessions/:session', (req, res) => {
     const { id, session } = req.params;

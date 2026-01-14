@@ -134,6 +134,7 @@ See "Development Workflow" at top of this file.
 ## Recent Changes
 
 ### UI/UX Improvements
+- **Current working directory display** - Shows the active pane's working directory below the session badge (📁 /path/to/dir). Updates when switching sessions. Discrete monospace styling with ellipsis for long paths
 - **Resume button** - Green "Resume" button to bring back suspended processes (Ctrl+Z recovery)
 - **Window close confirmation** - Confirmation dialog when closing tmux windows (Win1, Win2, etc.)
 - **Improved working directory UI** - Saved paths now displayed as clickable buttons below input field (more intuitive than dropdown)
@@ -150,6 +151,7 @@ See "Development Workflow" at top of this file.
 - Auto-copy on Shift+select (bypasses tmux mouse)
 
 ### Technical
+- **CWD API endpoint** - New GET /api/servers/:id/sessions/:session/cwd endpoint queries tmux with `list-panes -F "#{pane_current_path}"` and returns active pane's working directory
 - **SSH connection optimization** - Keepalive (10s interval), TCP_NODELAY, and faster ciphers to reduce input lag
 - **Consistent tmux mouse mode** - Explicitly enables mouse mode for all sessions (local and remote) to ensure consistent scrolling behavior across all servers
 - **Window close timing** - Server waits 200ms after tmux kill-window before responding to ensure UI refresh works

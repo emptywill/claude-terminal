@@ -775,6 +775,29 @@ body {
     display: none;
 }
 
+/* === SESSION CWD === */
+.session-cwd-container {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    font-family: var(--font-mono);
+}
+
+.session-cwd-label {
+    opacity: 0.6;
+    font-size: 11px;
+}
+
+.session-cwd-path {
+    color: rgba(255, 255, 255, 0.7);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* === WINDOW TABS === */
 .window-tabs {
     display: flex;

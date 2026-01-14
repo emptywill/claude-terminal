@@ -211,6 +211,40 @@ function toggleCommandsMenu(e) {
         }
     }
 
+    async function fetchCurrentWorkingDirectory(serverId, sessionName) {
+        try {
+            const response = await fetch(`/api/servers/${serverId}/sessions/${encodeURIComponent(sessionName)}/cwd`);
+
+            if (!response.ok) {
+                console.warn('Could not fetch CWD:', response.statusText);
+                return null;
+            }
+
+            const data = await response.json();
+            return data.cwd || null;
+        } catch (error) {
+            console.error('Error fetching CWD:', error);
+            return null;
+        }
+    }
+
+    function updateCWDDisplay(cwd) {
+        const container = document.querySelector('.session-cwd-container');
+        const pathElement = document.querySelector('.session-cwd-path');
+
+        if (!container || !pathElement) {
+            console.warn('CWD display elements not found');
+            return;
+        }
+
+        if (cwd) {
+            pathElement.textContent = cwd;
+            container.style.display = 'flex';
+        } else {
+            container.style.display = 'none';
+        }
+    }
+
     // ===== SESSION MANAGEMENT =====
 
     async function loadSessions() {
@@ -942,11 +976,16 @@ function toggleCommandsMenu(e) {
     }
 
     // Connect to session
-    function connectToSession(sessionName, serverId) {
+    async function connectToSession(sessionName, serverId) {
         currentSession = sessionName;
         if (serverId) currentServerId = serverId;
         updateSessionList();
         updateServerInfo();
+
+        // Fetch and display current working directory
+        const cwd = await fetchCurrentWorkingDirectory(serverId, sessionName);
+        updateCWDDisplay(cwd);
+
         loadWindows();
         document.getElementById('currentSessionName').textContent = sessionName;
 
