@@ -939,6 +939,18 @@ body {
     border-color: var(--accent-primary);
 }
 
+.tmux-pane-btn.btn-resume {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.35);
+    color: rgb(34, 197, 94);
+    font-weight: 600;
+}
+
+.tmux-pane-btn.btn-resume:hover {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: rgb(34, 197, 94);
+}
+
 /* === TERMINAL CONTAINER === */
 .claude-terminal-container {
     flex: 1;

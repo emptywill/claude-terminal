@@ -82,6 +82,10 @@
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                             <span>Interrupt</span>
                         </button>
+                        <button class="tmux-pane-btn btn-resume" id="btnResume" title="Resume suspended process (fg)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            <span>Resume</span>
+                        </button>
                         <div class="commands-dropdown">
                             <button class="tmux-pane-btn" id="btnCommands" title="Quick commands" onclick="toggleCommandsMenu(event)">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
@@ -89,6 +93,12 @@
                                 <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                             </button>
                             <div class="commands-menu hidden" id="commandsMenu">
+                                <!-- Process Control -->
+                                <div class="command-item" data-cmd="fg">
+                                    <div class="command-name">Resume (fg)</div>
+                                    <div class="command-desc">Resume suspended process (after Ctrl+Z)</div>
+                                </div>
+                                <div class="command-separator"></div>
                                 <!-- Project -->
                                 <div class="command-item" data-cmd="/init">
                                     <div class="command-name">/init</div>

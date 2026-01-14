@@ -538,7 +538,12 @@ function toggleCommandsMenu(e) {
         // Copy on mouse release if we captured a selection
         container.addEventListener('mouseup', () => {
             if (lastSelection) {
-                copyToClipboard(lastSelection);
+                // Trim trailing whitespace from each line
+                const trimmedText = lastSelection
+                    .split('\n')
+                    .map(line => line.trimEnd())
+                    .join('\n');
+                copyToClipboard(trimmedText);
                 lastSelection = '';
             }
         });
@@ -605,6 +610,16 @@ function toggleCommandsMenu(e) {
             }
         });
 
+        // Resume button (fg to bring back suspended processes)
+        document.getElementById('btnResume')?.addEventListener('click', () => {
+            if (currentSession && socket) {
+                // Use carriage return \r instead of \n to avoid terminal escape sequences
+                // Clear line with Ctrl+U, then send fg command
+                socket.emit('terminal_input', { data: '\x15fg\r' });
+                showToast('Resuming suspended process', 'info', 2000);
+            }
+        });
+
         // Commands dropdown - item click handlers
         const commandsMenu = document.getElementById('commandsMenu');
         commandsMenu?.querySelectorAll('.command-item').forEach(item => {
@@ -612,7 +627,13 @@ function toggleCommandsMenu(e) {
                 e.stopPropagation();
                 const cmd = item.dataset.cmd;
                 if (cmd && socket && currentSession) {
-                    socket.emit('terminal_input', { data: cmd });
+                    // Special handling for fg command
+                    if (cmd === 'fg') {
+                        socket.emit('terminal_input', { data: '\x15fg\r' });
+                        showToast('Resuming suspended process', 'info', 2000);
+                    } else {
+                        socket.emit('terminal_input', { data: cmd });
+                    }
                     term?.focus();
                 }
                 commandsMenu.classList.add('hidden');
@@ -672,7 +693,12 @@ function toggleCommandsMenu(e) {
         document.getElementById('btnTmuxCopy')?.addEventListener('click', () => {
             if (term && term.hasSelection()) {
                 const text = term.getSelection();
-                copyToClipboard(text);
+                // Trim trailing whitespace from each line
+                const trimmedText = text
+                    .split('\n')
+                    .map(line => line.trimEnd())
+                    .join('\n');
+                copyToClipboard(trimmedText);
             }
         });
 
@@ -885,14 +911,27 @@ function toggleCommandsMenu(e) {
     async function closeWindow(index) {
         if (!currentSession || !currentServerId) return;
 
+        // Show confirmation dialog
+        const confirmed = await showConfirm({
+            title: 'Close Window',
+            message: `Are you sure you want to close window ${index}? This will terminate all processes in this window.`,
+            icon: '🪟',
+            confirmText: 'Close Window',
+            danger: true
+        });
+
+        if (!confirmed) return;
+
         try {
             const response = await fetch(`/api/servers/${currentServerId}/sessions/${currentSession}/windows/${index}`, {
                 method: 'DELETE'
             });
 
             if (response.ok) {
-                // Refresh window tabs
+                // Wait for tmux to actually close the window before refreshing
+                // Immediate refresh would show old window list
                 setTimeout(loadWindows, 300);
+                setTimeout(loadWindows, 600);
             } else {
                 const error = await response.json();
                 console.error('Failed to close window:', error);

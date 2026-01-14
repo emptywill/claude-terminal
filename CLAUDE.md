@@ -134,6 +134,8 @@ See "Development Workflow" at top of this file.
 ## Recent Changes
 
 ### UI/UX Improvements
+- **Resume button** - Green "Resume" button to bring back suspended processes (Ctrl+Z recovery)
+- **Window close confirmation** - Confirmation dialog when closing tmux windows (Win1, Win2, etc.)
 - **Improved working directory UI** - Saved paths now displayed as clickable buttons below input field (more intuitive than dropdown)
 - **Path selector label** - Discrete "Saved paths:" label to indicate server-specific quick paths
 - Commands dropdown menu with quick access to Claude Code slash commands
@@ -144,10 +146,13 @@ See "Development Workflow" at top of this file.
 - **Brave browser support** - Auto-copy and paste now work in Brave
 - **Clipboard fallback** - Uses execCommand fallback when Clipboard API fails (strict security policies)
 - **Paste event handling** - Ctrl+V uses native paste event for better Brave compatibility
+- **Copy whitespace trimming** - Auto-copy now trims trailing whitespace from each line
 - Auto-copy on Shift+select (bypasses tmux mouse)
 
 ### Technical
+- **SSH connection optimization** - Keepalive (10s interval), TCP_NODELAY, and faster ciphers to reduce input lag
 - **Consistent tmux mouse mode** - Explicitly enables mouse mode for all sessions (local and remote) to ensure consistent scrolling behavior across all servers
+- **Window close timing** - Server waits 200ms after tmux kill-window before responding to ensure UI refresh works
 - Multiple saved paths per server (displayed as buttons when creating sessions)
 - Removed "Local" server type - all servers now use SSH
 - Session deduplication to prevent duplicates in menu

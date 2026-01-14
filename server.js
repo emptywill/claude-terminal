@@ -797,7 +797,10 @@ app.delete('/api/servers/:id/sessions/:session/windows/:windowIndex', (req, res)
                 res.status(500).json({ error: error.message });
                 return;
             }
-            res.json({ success: true });
+            // Wait 200ms for tmux to fully close the window before responding
+            setTimeout(() => {
+                res.json({ success: true });
+            }, 200);
         });
     } else {
         const conn = new Client();
@@ -811,7 +814,10 @@ app.delete('/api/servers/:id/sessions/:session/windows/:windowIndex', (req, res)
 
                 stream.on('close', () => {
                     conn.end();
-                    res.json({ success: true });
+                    // Wait 200ms for tmux to fully close the window before responding
+                    setTimeout(() => {
+                        res.json({ success: true });
+                    }, 200);
                 });
             });
         });
@@ -1041,6 +1047,9 @@ function attachRemoteTmux(socket, server, session, cols, rows) {
 
             sshConnections.set(socket.id, { conn, stream });
 
+            // Disable Nagle's algorithm for lower latency (prevents input lag)
+            stream.setNoDelay && stream.setNoDelay(true);
+
             stream.on('data', (data) => {
                 socket.emit('terminal_output', { data: data.toString() });
             });
@@ -1070,7 +1079,13 @@ function attachRemoteTmux(socket, server, session, cols, rows) {
         host: server.host,
         port: server.port,
         username: server.username,
-        readyTimeout: 10000
+        readyTimeout: 10000,
+        keepaliveInterval: 10000, // Send keepalive every 10 seconds
+        keepaliveCountMax: 3, // Close connection after 3 failed keepalives
+        algorithms: {
+            // Prioritize faster algorithms
+            cipher: ['aes128-gcm@openssh.com', 'aes128-ctr', 'aes256-ctr']
+        }
     };
 
     if (server.authType === 'password') {

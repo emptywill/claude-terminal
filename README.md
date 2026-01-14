@@ -264,6 +264,10 @@ server {
 ## Recent Updates
 
 **2026-01-13:**
+- **Resume button** - Green "Resume" button to bring back suspended processes after accidental Ctrl+Z
+- **Window close confirmation** - Confirmation dialog when closing tmux windows prevents accidental closes
+- **SSH input lag fix** - Added keepalive, TCP_NODELAY, and faster ciphers to reduce typing lag on remote servers
+- **Copy whitespace trimming** - Auto-copy now trims trailing whitespace from each line
 - **Consistent tmux scrolling** - Mouse mode now explicitly enabled for all sessions to ensure consistent scrolling behavior across servers
 
 **2026-01-12:**
