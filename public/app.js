@@ -232,35 +232,43 @@ function toggleCommandsMenu(e) {
         const sessionNameEl = document.getElementById('currentSessionName');
         if (!sessionNameEl) return;
 
-        // Find current session data
-        const session = sessions.find(s => s.name === currentSession && s.serverId === currentServerId);
-        const server = servers.find(s => s.id === currentServerId);
-
-        if (!session || !server) {
+        // If no session selected, remove tooltip
+        if (!currentSession || !currentServerId) {
             sessionNameEl.removeAttribute('data-tooltip');
             return;
         }
 
-        // Build tooltip content
+        // Find session and server data
+        const session = sessions.find(s => s.name === currentSession && s.serverId === currentServerId);
+        const server = servers.find(s => s.id === currentServerId);
+
+        // Build tooltip content (show what we have even if incomplete)
         let tooltip = '';
 
         if (cwd) {
             tooltip += `📁 ${cwd}\n`;
         }
 
-        tooltip += `🖥️  ${server.name} (${server.host})`;
+        if (server) {
+            tooltip += `🖥️  ${server.name} (${server.host})`;
+        }
 
-        if (session.windows) {
+        if (session && session.windows) {
             tooltip += `\n🪟 ${session.windows} window${session.windows !== 1 ? 's' : ''}`;
         }
 
-        if (session.createdDate) {
+        if (session && session.createdDate) {
             const date = new Date(session.createdDate);
             const timeStr = date.toLocaleString();
             tooltip += `\n🕐 Created ${timeStr}`;
         }
 
-        sessionNameEl.setAttribute('data-tooltip', tooltip);
+        // Always set tooltip if we have any content
+        if (tooltip) {
+            sessionNameEl.setAttribute('data-tooltip', tooltip);
+        } else {
+            sessionNameEl.removeAttribute('data-tooltip');
+        }
     }
 
     // ===== SESSION MANAGEMENT =====
@@ -1004,7 +1012,10 @@ function toggleCommandsMenu(e) {
         const cwd = await fetchCurrentWorkingDirectory(serverId, sessionName);
         updateSessionTooltip(cwd);
 
-        loadWindows();
+        // Load windows and update tooltip again with window count
+        loadWindows().then(() => {
+            updateSessionTooltip(cwd);
+        });
         document.getElementById('currentSessionName').textContent = sessionName;
 
         // Collapse on mobile
