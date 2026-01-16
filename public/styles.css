@@ -512,7 +512,7 @@ body {
 .session-manager-header {
     padding: 1rem 1.25rem;
     border-bottom: 1px solid var(--border-default);
-    display: flex;
+    display: none; /* Hidden on desktop */
     justify-content: space-between;
     align-items: center;
     background: linear-gradient(135deg, var(--accent-subtle) 0%, transparent 100%);
@@ -1589,6 +1589,7 @@ body {
     }
 
     .session-manager-header {
+        display: flex !important; /* Show on mobile */
         padding: 0.75rem 1rem;
         min-height: 48px;
     }

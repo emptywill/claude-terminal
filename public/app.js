@@ -479,7 +479,7 @@ function toggleCommandsMenu(e) {
                 const toggleBtn = document.createElement('button');
                 toggleBtn.className = 'mobile-toggle-btn';
                 toggleBtn.innerHTML = '▼';
-                toggleBtn.style.cssText = 'background: var(--accent-primary); color: #000; border: none; padding: 0.5rem 0.75rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold; cursor: pointer; margin-left: auto;';
+                toggleBtn.style.cssText = 'background: var(--accent-primary); color: #000; border: none; padding: 0.5rem 0.75rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold; cursor: pointer; margin-left: auto; z-index: 100; position: relative; flex-shrink: 0;';
                 sessionHeader.appendChild(toggleBtn);
 
                 toggleBtn.addEventListener('click', (e) => {
