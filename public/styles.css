@@ -503,6 +503,12 @@ body {
     overflow: hidden;
 }
 
+/* Keep mobile toggle button visible and clickable when collapsed */
+.session-manager.collapsed .mobile-toggle-btn {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
 .session-manager-header {
     padding: 1rem 1.25rem;
     border-bottom: 1px solid var(--border-default);
@@ -1572,6 +1578,12 @@ body {
         pointer-events: auto !important;
     }
 
+    /* Keep header and toggle button visible when collapsed on mobile */
+    .session-manager.collapsed .session-manager-header {
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
+
     .session-manager .sidebar-collapse-toggle {
         display: none !important;
     }
@@ -2069,12 +2081,15 @@ body {
     display: inline-block;
 }
 
-.tmux-pane-controls {
-    overflow: visible !important;
-}
+/* Allow dropdown to overflow on desktop only */
+@media (min-width: 969px) {
+    .tmux-pane-controls {
+        overflow: visible !important;
+    }
 
-.btn-group {
-    overflow: visible !important;
+    .btn-group {
+        overflow: visible !important;
+    }
 }
 
 .commands-dropdown .dropdown-arrow {
