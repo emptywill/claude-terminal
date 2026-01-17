@@ -640,23 +640,9 @@ function toggleCommandsMenu(e) {
                 // Mobile-specific fixes for cursor positioning
                 if (isMobile) {
                     textarea.setAttribute('inputmode', 'text');
-                    textarea.style.position = 'fixed';
-                    textarea.style.top = '0';
-                    textarea.style.left = '0';
-
-                    // Prevent scrolling when textarea is focused
-                    textarea.addEventListener('focus', (e) => {
-                        e.preventDefault();
-                        // Keep viewport at current position
-                        window.scrollTo(0, 0);
-                        container.scrollTop = 0;
-                    });
-
-                    // Prevent scroll on blur
-                    textarea.addEventListener('blur', () => {
-                        window.scrollTo(0, 0);
-                        container.scrollTop = 0;
-                    });
+                    textarea.style.position = 'absolute';
+                    textarea.style.top = '-9999px';
+                    textarea.style.left = '-9999px';
                 }
             }
         }, 500);
