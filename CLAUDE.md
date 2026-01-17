@@ -159,6 +159,9 @@ See "Development Workflow" at top of this file.
 ## Recent Changes
 
 ### UI/UX Improvements
+- **Mobile cursor positioning fix** - Fixed bug where cursor would end up at bottom of screen on mobile. Locks viewport position and fixes xterm textarea positioning to prevent virtual keyboard scrolling issues
+- **Mobile session toggle** - Orange toggle button (▼/▶) in header allows expanding/collapsing session menu to switch sessions
+- **Mobile horizontal scrolling** - Terminal control buttons now scrollable horizontally to access all controls (Copy, Paste, Zoom, etc.)
 - **Session info tooltip** - Hover over session name to see: current working directory (📁), server info (🖥️), window count (🪟), and creation time (🕐). Updates when switching sessions
 - **Resume button** - Green "Resume" button to bring back suspended processes (Ctrl+Z recovery)
 - **Window close confirmation** - Confirmation dialog when closing tmux windows (Win1, Win2, etc.)
