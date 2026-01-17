@@ -947,7 +947,10 @@ function toggleCommandsMenu(e) {
     async function loadWindows() {
         const tabsContainer = document.getElementById('windowTabs');
         if (!tabsContainer || !currentSession || !currentServerId) {
-            if (tabsContainer) tabsContainer.innerHTML = '';
+            if (tabsContainer) {
+                tabsContainer.innerHTML = '';
+                tabsContainer.style.display = 'none';
+            }
             return;
         }
 
@@ -955,6 +958,7 @@ function toggleCommandsMenu(e) {
             const response = await fetch(`/api/servers/${currentServerId}/sessions/${currentSession}/windows`);
             if (!response.ok) {
                 tabsContainer.innerHTML = '';
+                tabsContainer.style.display = 'none';
                 return;
             }
 
@@ -963,9 +967,11 @@ function toggleCommandsMenu(e) {
             // Only show tabs if more than 1 window
             if (windows.length <= 1) {
                 tabsContainer.innerHTML = '';
+                tabsContainer.style.display = 'none';
                 return;
             }
 
+            tabsContainer.style.display = 'flex';
             tabsContainer.innerHTML = windows.map((w, i) => `
                 <button class="window-tab stagger-item ${w.active ? 'active' : ''}" data-index="${w.index}" title="Window ${i + 1} (${w.name})" style="animation-delay: ${i * 0.05}s">
                     <span class="window-tab-name">Win ${i + 1}</span>
@@ -1031,7 +1037,8 @@ function toggleCommandsMenu(e) {
                 // Wait for tmux to actually close the window before refreshing
                 // Immediate refresh would show old window list
                 setTimeout(loadWindows, 300);
-                setTimeout(loadWindows, 600);
+                setTimeout(loadWindows, 700);
+                setTimeout(loadWindows, 1000);
             } else {
                 const error = await response.json();
                 console.error('Failed to close window:', error);
