@@ -1626,6 +1626,25 @@ body {
 
     .session-info-bar {
         padding: 0.5rem 0.75rem;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .session-info-left {
+        flex-wrap: nowrap;
+        min-width: 0;
+    }
+
+    .window-tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        flex-wrap: nowrap;
+        margin-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    .window-tab {
+        flex-shrink: 0;
     }
 
     .tmux-pane-controls {
