@@ -628,7 +628,7 @@ function toggleCommandsMenu(e) {
             return true; // Let xterm handle all other keys
         });
 
-        // Disable mobile autocapitalize
+        // Disable mobile autocapitalize and fix mobile input issues
         setTimeout(() => {
             const textarea = container.querySelector('.xterm-helper-textarea');
             if (textarea) {
@@ -636,6 +636,28 @@ function toggleCommandsMenu(e) {
                 textarea.setAttribute('autocomplete', 'off');
                 textarea.setAttribute('autocorrect', 'off');
                 textarea.setAttribute('spellcheck', 'false');
+
+                // Mobile-specific fixes for cursor positioning
+                if (isMobile) {
+                    textarea.setAttribute('inputmode', 'text');
+                    textarea.style.position = 'fixed';
+                    textarea.style.top = '0';
+                    textarea.style.left = '0';
+
+                    // Prevent scrolling when textarea is focused
+                    textarea.addEventListener('focus', (e) => {
+                        e.preventDefault();
+                        // Keep viewport at current position
+                        window.scrollTo(0, 0);
+                        container.scrollTop = 0;
+                    });
+
+                    // Prevent scroll on blur
+                    textarea.addEventListener('blur', () => {
+                        window.scrollTo(0, 0);
+                        container.scrollTop = 0;
+                    });
+                }
             }
         }, 500);
 
