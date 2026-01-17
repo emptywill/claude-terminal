@@ -640,9 +640,41 @@ function toggleCommandsMenu(e) {
                 // Mobile-specific fixes for cursor positioning
                 if (isMobile) {
                     textarea.setAttribute('inputmode', 'text');
-                    textarea.style.position = 'absolute';
-                    textarea.style.top = '-9999px';
-                    textarea.style.left = '-9999px';
+
+                    // Prevent scroll-into-view when textarea focuses
+                    const preventScroll = (e) => {
+                        const scrollX = window.scrollX;
+                        const scrollY = window.scrollY;
+                        const containerScrollTop = container.scrollTop;
+
+                        // Restore scroll position immediately after any scroll attempt
+                        setTimeout(() => {
+                            window.scrollTo(scrollX, scrollY);
+                            container.scrollTop = containerScrollTop;
+                        }, 0);
+                    };
+
+                    textarea.addEventListener('focus', preventScroll);
+
+                    // Also prevent scroll on input events
+                    textarea.addEventListener('input', preventScroll);
+
+                    // Store scroll position before any interaction
+                    let savedScrollY = 0;
+                    let savedContainerScroll = 0;
+
+                    container.addEventListener('touchstart', () => {
+                        savedScrollY = window.scrollY;
+                        savedContainerScroll = container.scrollTop;
+                    });
+
+                    // Prevent auto-scroll on keyboard open
+                    window.addEventListener('resize', () => {
+                        if (document.activeElement === textarea) {
+                            window.scrollTo(0, savedScrollY);
+                            container.scrollTop = savedContainerScroll;
+                        }
+                    });
                 }
             }
         }, 500);

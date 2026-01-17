@@ -1051,13 +1051,15 @@ body {
 /* Mobile fixes for textarea positioning */
 @media (max-width: 968px) {
     .claude-terminal-container .xterm-helper-textarea {
-        position: absolute !important;
-        top: -9999px !important;
-        left: -9999px !important;
+        position: fixed !important;
+        top: 50vh !important;
+        left: 50vw !important;
+        transform: translate(-50%, -50%) !important;
         width: 1px !important;
         height: 1px !important;
         opacity: 0 !important;
         pointer-events: auto !important;
+        z-index: -1 !important;
     }
 }
 
